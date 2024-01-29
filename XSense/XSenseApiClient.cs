@@ -9,7 +9,7 @@ namespace XSense;
 
 public class InMemoryStorage
 {
-    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public async ValueTask<T> GetOrAddAsync<T>(string key, Func<ValueTask<T>> factory)
     {
@@ -68,6 +68,13 @@ internal class XSenseApiClient
         // 1: Check if we have a valid refresh token
         // 2: If not, authenticate with SRP
         // 3: If so, refresh the token
+        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
+
+        _storage.GetOrAddAsync($"login_{userName}", async () =>
+        {
+            var credentials = await _httpClient.LoginAsync(clientInfo, userName, password).ConfigureAwait(false);
+            return credentials;
+        });
     }
 
     private async ValueTask<ClientInfo> GetClientInfoAsync()
