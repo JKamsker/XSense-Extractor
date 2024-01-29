@@ -7,27 +7,121 @@ using System.Threading.Tasks;
 
 namespace XSense;
 
+public interface IExpirable
+{
+    bool IsExpired { get; }
+}
+
 public class InMemoryStorage
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    public async ValueTask<T> GetOrAddAsync<T>(string key, Func<ValueTask<T>> factory)
+    //public async ValueTask<T> GetOrAddAsync<T>(string key, Func<ValueTask<T>> factory)
+    //{
+    //    var entry = _cache.GetOrAdd(key, _ => new CacheEntry(null));
+    //    if (entry.Value is not null)
+    //    {
+    //        return (T)entry.Value;
+    //    }
+
+    //    await entry.Semaphore.WaitAsync().ConfigureAwait(false);
+    //    try
+    //    {
+    //        if (entry.Value is not null)
+    //        {
+    //            return (T)entry.Value;
+    //        }
+
+    //        var result = await factory().ConfigureAwait(false);
+    //        entry.Value = result;
+    //        return result;
+    //    }
+    //    finally
+    //    {
+    //        entry.Semaphore.Release();
+    //    }
+    //}
+
+    //public async ValueTask<T> GetOrAddAsync<T>(string key, Func<ValueTask<T>> factory)
+    //    where T : class
+    //{
+    //    var entry = _cache.GetOrAdd(key, _ => new CacheEntry(null));
+    //    if (entry.Value is not null)
+    //    {
+    //        if (entry.Value is IExpirable expirable && expirable.IsExpired)
+    //        {
+    //            // If the value is expired, remove it from cache
+    //            _cache.TryRemove(key, out _);
+    //        }
+    //        else
+    //        {
+    //            return (T)entry.Value;
+    //        }
+    //    }
+
+    //    await entry.Semaphore.WaitAsync().ConfigureAwait(false);
+    //    try
+    //    {
+    //        if (entry.Value is not null)
+    //        {
+    //            if (entry.Value is IExpirable expirable && expirable.IsExpired)
+    //            {
+    //                // If the value is expired, remove it from cache
+    //                _cache.TryRemove(key, out _);
+    //            }
+    //            else
+    //            {
+    //                return (T)entry.Value;
+    //            }
+    //        }
+
+    //        var result = await factory().ConfigureAwait(false);
+    //        entry.Value = result;
+    //        return result;
+    //    }
+    //    finally
+    //    {
+    //        entry.Semaphore.Release();
+    //    }
+    //}
+
+    public async ValueTask<T> GetOrAddAsync<T>(string key, Func<T, ValueTask<T>> factory)
+        where T : class
     {
         var entry = _cache.GetOrAdd(key, _ => new CacheEntry(null));
-        if (entry.Value is not null)
+        T oldValue = entry.Value as T;
+
+        if (oldValue is not null)
         {
-            return (T)entry.Value;
+            if (oldValue is IExpirable expirable && expirable.IsExpired)
+            {
+                // If the value is expired, remove it from cache
+                _cache.TryRemove(key, out _);
+            }
+            else
+            {
+                return oldValue;
+            }
         }
 
         await entry.Semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (entry.Value is not null)
+            oldValue = entry.Value as T;
+            if (oldValue is not null)
             {
-                return (T)entry.Value;
+                if (oldValue is IExpirable expirable && expirable.IsExpired)
+                {
+                    // If the value is expired, remove it from cache
+                    _cache.TryRemove(key, out _);
+                }
+                else
+                {
+                    return oldValue;
+                }
             }
 
-            var result = await factory().ConfigureAwait(false);
+            var result = await factory(oldValue).ConfigureAwait(false);
             entry.Value = result;
             return result;
         }
@@ -56,6 +150,7 @@ internal class XSenseApiClient
 {
     private readonly XSenseHttpClient _httpClient;
     private readonly InMemoryStorage _storage;
+    private Credentials _credentials;
 
     public XSenseApiClient(XSenseHttpClient httpClient, InMemoryStorage storage)
     {
@@ -70,21 +165,30 @@ internal class XSenseApiClient
         // 3: If so, refresh the token
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
 
-        _storage.GetOrAddAsync($"login_{userName}", async () =>
+        _credentials = await _storage.GetOrAddAsync<Credentials>($"login_{userName}", async old =>
         {
-            var credentials = await _httpClient.LoginAsync(clientInfo, userName, password).ConfigureAwait(false);
-            return credentials;
+            if (old is not null && !old.ShouldRefresh)
+            {
+                return old;
+            }
+
+            if (old is null)
+            {
+                return await _httpClient.AuthenticateWithSrpAsync(clientInfo, userName, password).ConfigureAwait(false);
+            }
+
+            return await _httpClient.RefreshTokenAsync(clientInfo, old.Username, old.RefreshToken).ConfigureAwait(false);
         });
+
+        return _credentials is not null;
     }
 
     private async ValueTask<ClientInfo> GetClientInfoAsync()
     {
-        var info = await _storage.GetOrAddAsync("clientInfo", async () =>
+        return await _storage.GetOrAddAsync<ClientInfo>("clientInfo", async _ =>
         {
             var clientInfo = await _httpClient.QueryClientInfo().ConfigureAwait(false);
             return clientInfo;
         }).ConfigureAwait(false);
-
-        return info;
     }
 }

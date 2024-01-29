@@ -92,7 +92,7 @@ public class XSenseHttpClient
         return new Credentials(user, authResponse.AuthenticationResult);
     }
 
-    public async Task<Credentials> GetCredsFromRefreshAsync(ClientInfo clientInfo, string userName, string refreshToken)
+    public async Task<Credentials> RefreshTokenAsync(ClientInfo clientInfo, string userName, string refreshToken)
     {
         //var clientInfo = await QueryClientInfo()
         //    ?? throw new InvalidOperationException("ClientInfo is null");
