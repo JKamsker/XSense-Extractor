@@ -11,20 +11,21 @@ namespace XSense;
 
 public class Credentials
 {
-    public CognitoUser User { get; set; }
+    //public CognitoUser User { get; set; }
     public AuthenticationResultType AuthenticationResult { get; set; }
 
     public Credentials(CognitoUser user, AuthenticationResultType authenticationResult)
     {
-        User = user;
+        //User = user;
         AuthenticationResult = authenticationResult;
 
-        UserName = user.Username;
+        Username = user.Username;
         UserId = user.UserID;
 
         IdToken = authenticationResult.IdToken;
         AccessToken = authenticationResult.AccessToken;
         RefreshToken = authenticationResult.RefreshToken;
+        ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(authenticationResult.ExpiresIn);
     }
 
     /// <summary>
@@ -35,7 +36,7 @@ public class Credentials
     /// <summary>
     /// UserName (GUID)
     /// </summary>
-    public string UserName { get; set; }
+    public string Username { get; set; }
 
     //public string Password { get; set; }
 
@@ -43,4 +44,8 @@ public class Credentials
     public string AccessToken { get; set; }
 
     public string RefreshToken { get; set; }
+
+    public DateTimeOffset ExpiresAt { get; set; }
+
+    public bool ShouldRefresh => ExpiresAt < DateTimeOffset.UtcNow.AddMinutes(5);
 }

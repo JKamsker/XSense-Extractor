@@ -15,7 +15,7 @@ internal class Program
         var xsenseClient = new XSenseHttpClient(new HttpClient());
         var authResult = await xsenseClient.AuthenticateWithSrpAsync("USERNAME", "PASSWORD");
 
-        var refreshed = await xsenseClient.GetCredsFromRefreshAsync(authResult.UserName, authResult.RefreshToken);
+        var refreshed = await xsenseClient.GetCredsFromRefreshAsync(authResult.Username, authResult.RefreshToken);
 
         await xsenseClient.GetHouses(authResult);
 
