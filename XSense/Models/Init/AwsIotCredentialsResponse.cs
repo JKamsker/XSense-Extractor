@@ -7,29 +7,11 @@ using System.Threading.Tasks;
 
 namespace XSense.Models.Init;
 
-public partial class AwsIotCredentialsResponse
+public partial class AwsIotCredentialsResponse : XSenseResponse<AwsIotCredentials>
 {
-    [JsonPropertyName("reCode")]
-    public long ReCode { get; set; }
-
-    [JsonPropertyName("reMsg")]
-    public string ReMsg { get; set; }
-
-    [JsonPropertyName("cntVersion")]
-    public string CntVersion { get; set; }
-
-    [JsonPropertyName("cfgVersion")]
-    public CfgVersion CfgVersion { get; set; }
-
     [JsonPropertyName("reData")]
     public AwsIotCredentials ReData { get; set; }
 }
-
-//public class CfgVersion
-//{
-//    [JsonPropertyName("deviceControl")]
-//    public string DeviceControl { get; set; }
-//}
 
 public partial class AwsIotCredentials
 {

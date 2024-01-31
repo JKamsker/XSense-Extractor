@@ -4,6 +4,7 @@ using Amazon.Extensions.CognitoAuthentication;
 using Amazon.Runtime;
 
 using System.Net.Http.Json;
+using System.Text.Json;
 
 using XSense.Models.Init;
 
@@ -90,6 +91,17 @@ public class XSenseHttpClient
         }).ConfigureAwait(false);
 
         return new Credentials(user, authResponse.AuthenticationResult);
+    }
+
+    public async Task<Credentials> RefreshTokenAsync(ClientInfo clientInfo, Credentials credentials)
+    {
+        clientInfo = clientInfo
+            ?? throw new ArgumentNullException(nameof(clientInfo));
+
+        credentials = credentials
+            ?? throw new ArgumentNullException(nameof(credentials));
+
+        return await RefreshTokenAsync(clientInfo, credentials.Username, credentials.RefreshToken);
     }
 
     public async Task<Credentials> RefreshTokenAsync(ClientInfo clientInfo, string userName, string refreshToken)
@@ -185,7 +197,7 @@ public class XSenseHttpClient
 		*/
     }
 
-    public async Task GetHouses(ClientInfo clientInfo, Credentials creds)
+    public async Task<GetHousesResponseData[]> GetHouses(ClientInfo clientInfo, Credentials creds)
     {
         //var clientInfo = await QueryClientInfo()
         //    ?? throw new InvalidOperationException("ClientInfo is null");
@@ -220,6 +232,100 @@ public class XSenseHttpClient
 
         var text = await response.Content.ReadAsStringAsync();
         //{"reCode": 200, "reMsg": "success !", "cntVersion": "5", "cfgVersion": {"deviceControl": "7"}, "reData": [{"houseId": "64C4BD7BB9DF11EE8FFBF7BED2BE3C43", "houseName": "Zu hause", "houseRegion": "Germany (Deutschland)", "mqttRegion": "eu-central-1", "mqttServer": "eu-central-1.x-sense-iot.com", "loraBand": "868", "houseOrigin": 0, "createTime": "20240123110601"}], "delData": [], "deSubData": ["64C4BD7BB9DF11EE8FFBF7BED2BE3C43"], "utctimestamp": 1706478440}
+
+        response.EnsureSuccessStatusCode();
+
+        var parsed = await response.Content.ReadFromJsonAsync<GetHousesResponse>();
+        if (parsed?.ReData is null)
+        {
+            return null;
+        }
+
+        return parsed.ReData;
+    }
+
+    /*
+    {
+    "houseId": "64C4BD7BB9DF11EE8FFBF7BED2BE3C43",
+	"utctimestamp": "0",
+    "mac": "..."
+        "bizCode": "103007",
+    }
+
+     */
+
+    public async Task GetHouseDetails(ClientInfo clientInfo, Credentials creds, string houseId)
+    {
+        clientInfo = clientInfo
+            ?? throw new ArgumentNullException(nameof(clientInfo));
+
+        creds = creds
+            ?? throw new ArgumentNullException(nameof(creds));
+
+        //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.x-sense-iot.com/app");
+        //request.Headers.TryAddWithoutValidation("authorization", creds.AccessToken);
+        //request.Headers.TryAddWithoutValidation("userpoolconfig", clientInfo.UserPoolConfig);
+        //request.Headers.TryAddWithoutValidation("language", "de");
+        //request.Headers.TryAddWithoutValidation("user-agent", "okhttp/3.14.7");
+
+        //request.Content = JsonContent.Create(new
+        //{
+        //    houseId,
+        //    utctimestamp = 0,
+        //    mac = MacUtils.GetRequestMac(new Dictionary<string, object>
+        //    {
+        //        { "houseId", houseId },
+        //        { "utctimestamp", 0 },
+        //    }, clientInfo.ClientSecret),
+        //    bizCode = "103007",
+        //    appCode = "1172",
+        //    appVersion = "v1.17.2_20240115",
+        //    clientType = "2"
+        //});
+
+        //var response = await _client.SendAsync(request);
+        //response.EnsureSuccessStatusCode();
+
+        var response = await PerformXSenseRequest(clientInfo, creds, "103007", new
+        {
+            houseId,
+            utctimestamp = 0,
+        });
+
+        var text = await response.Content.ReadAsStringAsync();
+    }
+
+    private async Task<HttpResponseMessage> PerformXSenseRequest<T>(ClientInfo clientInfo, Credentials creds, string bizCode, T body)
+    {
+        clientInfo = clientInfo
+          ?? throw new ArgumentNullException(nameof(clientInfo));
+
+        creds = creds
+            ?? throw new ArgumentNullException(nameof(creds));
+
+        using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.x-sense-iot.com/app");
+        request.Headers.TryAddWithoutValidation("authorization", creds.AccessToken);
+        request.Headers.TryAddWithoutValidation("userpoolconfig", clientInfo.UserPoolConfig);
+        request.Headers.TryAddWithoutValidation("language", "de");
+        request.Headers.TryAddWithoutValidation("user-agent", "okhttp/3.14.7");
+
+        var dictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(JsonSerializer.Serialize(body));
+        var mac = MacUtils.GetRequestMac(dictionary, clientInfo.ClientSecret);
+        if (mac != null)
+        {
+            dictionary.Add("mac", mac);
+        }
+
+        dictionary.Add("bizCode", bizCode);
+        dictionary.Add("appCode", "1172");
+        dictionary.Add("appVersion", "v1.17.2_20240115");
+        dictionary.Add("clientType", "2");
+
+        request.Content = JsonContent.Create(dictionary);
+
+        var response = await _client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        return response;
     }
 
     public async Task GetSensoricData(ClientInfo clientInfo, Credentials creds)
@@ -234,7 +340,6 @@ public class XSenseHttpClient
             ?? throw new ArgumentNullException(nameof(creds));
 
         using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.x-sense-iot.com/app");
-        //request.Headers.TryAddWithoutValidation("Host", "api.x-sense-iot.com");
         request.Headers.TryAddWithoutValidation("authorization", creds.AccessToken);
         request.Headers.TryAddWithoutValidation("userpoolconfig", clientInfo.UserPoolConfig);
         request.Headers.TryAddWithoutValidation("language", "de");

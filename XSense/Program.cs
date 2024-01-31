@@ -12,14 +12,25 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
+        var storage = InMemoryStorage.LoadFromDisk("strorage.json");
+        storage.OnCacheUpdated = async s => await s.SaveToDiskAsync("strorage.json");
+
         var xsenseClient = new XSenseHttpClient(new HttpClient());
-        var authResult = await xsenseClient.AuthenticateWithSrpAsync("USERNAME", "PASSWORD");
+        var xsenseApiClient = new XSenseApiClient(xsenseClient, storage);
 
-        var refreshed = await xsenseClient.GetCredsFromRefreshAsync(authResult.Username, authResult.RefreshToken);
+        await xsenseApiClient.LoginAsync("USERNAME", "PASSWORD");
 
-        await xsenseClient.GetHouses(authResult);
+        var houses = await xsenseApiClient.GetHousesAsync();
+        await xsenseApiClient.GetHouseDetailsAsync(houses[0].HouseId);
 
-        var iotCreds = await xsenseClient.GetAwsIotCredentials(authResult);
+        var clientInfo = await xsenseClient.QueryClientInfo();
+        var authResult = await xsenseClient.AuthenticateWithSrpAsync(clientInfo, "USERNAME", "PASSWORD");
+
+        var refreshed = await xsenseClient.RefreshTokenAsync(clientInfo, authResult.Username, authResult.RefreshToken);
+
+        await xsenseClient.GetHouses(clientInfo, authResult);
+
+        var iotCreds = await xsenseClient.GetAwsIotCredentials(clientInfo, authResult);
 
         //await xsenseClient.GetSensoricData(authResult);
 

@@ -1,6 +1,8 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
 using Amazon.Extensions.CognitoAuthentication;
 
+using System.Text.Json.Serialization;
+
 namespace XSense;
 
 //public record Credentials
@@ -9,15 +11,15 @@ namespace XSense;
 //    AuthenticationResultType AuthenticationResult
 //);
 
-public class Credentials
+public class Credentials : IExpirable
 {
     //public CognitoUser User { get; set; }
-    public AuthenticationResultType AuthenticationResult { get; set; }
+    //public AuthenticationResultType AuthenticationResult { get; set; }
 
     public Credentials(CognitoUser user, AuthenticationResultType authenticationResult)
     {
         //User = user;
-        AuthenticationResult = authenticationResult;
+        //AuthenticationResult = authenticationResult;
 
         Username = user.Username;
         UserId = user.UserID;
@@ -26,6 +28,10 @@ public class Credentials
         AccessToken = authenticationResult.AccessToken;
         RefreshToken = authenticationResult.RefreshToken;
         ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(authenticationResult.ExpiresIn);
+    }
+
+    public Credentials()
+    {
     }
 
     /// <summary>
@@ -47,5 +53,9 @@ public class Credentials
 
     public DateTimeOffset ExpiresAt { get; set; }
 
+    [JsonIgnore]
     public bool ShouldRefresh => ExpiresAt < DateTimeOffset.UtcNow.AddMinutes(5);
+
+    [JsonIgnore]
+    public bool IsExpired => ShouldRefresh;
 }

@@ -21,20 +21,8 @@ namespace XSense.Models.Init;
 	}
  */
 
-public partial class InitResponse
+public partial class InitResponse : XSenseResponse<InitResponseData>
 {
-    [JsonPropertyName("reCode")]
-    public long ReCode { get; set; }
-
-    [JsonPropertyName("reMsg")]
-    public string ReMsg { get; set; }
-
-    [JsonPropertyName("cntVersion")]
-    public string CntVersion { get; set; }
-
-    [JsonPropertyName("cfgVersion")]
-    public CfgVersion CfgVersion { get; set; }
-
     [JsonPropertyName("reData")]
     public InitResponseData ReData { get; set; }
 }
