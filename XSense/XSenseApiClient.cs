@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 
 using XSense.Models.Init;
+using XSense.Models.Sensoric;
 
 namespace XSense;
 
@@ -246,10 +247,17 @@ internal class XSenseApiClient
     }
 
     // GetHouseDetails
-    public async Task GetHouseDetailsAsync(string houseId)
+    public async Task<GetHousesDetailResponseData> GetHouseDetailsAsync(string houseId)
     {
         var creds = await GetCredentialsAsync().ConfigureAwait(false);
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
-        await _httpClient.GetHouseDetails(clientInfo, creds, houseId).ConfigureAwait(false);
+        return await _httpClient.GetHouseDetails(clientInfo, creds, houseId).ConfigureAwait(false);
+    }
+
+    public async Task<GetSensoricDataResponseData> GetSensoricDataAsync(GetSensoricDataRequest request)
+    {
+        var creds = await GetCredentialsAsync().ConfigureAwait(false);
+        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
+        return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
     }
 }

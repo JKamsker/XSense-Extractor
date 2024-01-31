@@ -1,10 +1,10 @@
-﻿using Amazon.IotData.Model;
-using Amazon.IotData;
+﻿using Amazon.IotData;
+using Amazon.IotData.Model;
 using Amazon.Runtime;
 
 using System.Text;
-using System.Text.Json.Serialization;
-using Amazon;
+
+using XSense.Models.Sensoric;
 
 namespace XSense;
 
@@ -21,7 +21,23 @@ internal class Program
         await xsenseApiClient.LoginAsync("USERNAME", "PASSWORD");
 
         var houses = await xsenseApiClient.GetHousesAsync();
-        await xsenseApiClient.GetHouseDetailsAsync(houses[0].HouseId);
+        var details = await xsenseApiClient.GetHouseDetailsAsync(houses[0].HouseId);
+
+        foreach (var station in details.Stations)
+        {
+            foreach (var device in station.Devices)
+            {
+                var sensoricData = await xsenseApiClient.GetSensoricDataAsync(
+                    new GetSensoricDataRequest
+                    {
+                        HouseId = details.HouseId,
+                        StationId = station.StationId,
+                        DeviceId = device.DeviceId,
+                        LastTime = "20240123140600"
+                    }
+                );
+            }
+        }
 
         var clientInfo = await xsenseClient.QueryClientInfo();
         var authResult = await xsenseClient.AuthenticateWithSrpAsync(clientInfo, "USERNAME", "PASSWORD");

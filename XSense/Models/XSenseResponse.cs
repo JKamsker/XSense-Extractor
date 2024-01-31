@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace XSense.Models.Init;
+using XSense.Models.Init;
+
+namespace XSense.Models;
 
 public class XSenseResponse<T>
 {
