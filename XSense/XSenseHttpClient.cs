@@ -268,43 +268,6 @@ public class XSenseHttpClient
 
     public async Task<GetSensoricDataResponseData> GetSensoricData(ClientInfo clientInfo, Credentials creds, GetSensoricDataRequest req)
     {
-        //var clientInfo = await QueryClientInfo()
-        //    ?? throw new InvalidOperationException("ClientInfo is null");
-
-        //clientInfo = clientInfo
-        //    ?? throw new ArgumentNullException(nameof(clientInfo));
-
-        //creds = creds
-        //    ?? throw new ArgumentNullException(nameof(creds));
-
-        //using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.x-sense-iot.com/app");
-        //request.Headers.TryAddWithoutValidation("authorization", creds.AccessToken);
-        //request.Headers.TryAddWithoutValidation("userpoolconfig", clientInfo.UserPoolConfig);
-        //request.Headers.TryAddWithoutValidation("language", "de");
-        //request.Headers.TryAddWithoutValidation("user-agent", "okhttp/3.14.7");
-
-        //request.Content = JsonContent.Create(new
-        //{
-        //    houseId = "64C4BD7BB9DF11EE8FFBF7BED2BE3C43",
-        //    stationId = "914AABBCB9DF11EEB68155479EFE878E",
-        //    deviceId = "49AB1D9DB9E011EEBB759F5A3BFA1896",
-        //    lastTime = "20240123140600",
-        //    mac = MacUtils.GetRequestMac(new Dictionary<string, object>
-        //    {
-        //        { "houseId", "64C4BD7BB9DF11EE8FFBF7BED2BE3C43" },
-        //        { "stationId", "914AABBCB9DF11EEB68155479EFE878E" },
-        //        { "deviceId", "49AB1D9DB9E011EEBB759F5A3BFA1896" },
-        //        { "lastTime", "20240123140600" },
-        //    }, clientInfo.ClientSecret),
-        //    bizCode = "104011",
-        //    appCode = "1172",
-        //    appVersion = "v1.17.2_20240115",
-        //    clientType = "2"
-        //});
-
-        //var response = await _client.SendAsync(request);
-        //response.EnsureSuccessStatusCode();
-
         var response = await SendXSenseRequestAsync(clientInfo, creds, "104011", req);
 
         var text = await response.Content.ReadAsStringAsync();
