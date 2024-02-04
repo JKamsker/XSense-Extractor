@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using Amazon.IotData;
+using Amazon.IotData.Model;
+using Amazon.Runtime;
+
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -6,175 +9,6 @@ using XSense.Models.Init;
 using XSense.Models.Sensoric;
 
 namespace XSense;
-
-public interface IExpirable
-{
-    bool IsExpired { get; }
-}
-
-public class InMemoryStorage
-{
-    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
-
-    public Func<InMemoryStorage, ValueTask> OnCacheUpdated { get; set; } = s => ValueTask.CompletedTask;
-
-    public InMemoryStorage()
-    {
-    }
-
-    private InMemoryStorage(ConcurrentDictionary<string, CacheEntry>? cache)
-    {
-        _cache = cache ?? new ConcurrentDictionary<string, CacheEntry>();
-    }
-
-    public async ValueTask<T> GetOrAddAsync<T>(string key, Func<T, ValueTask<T>> factory)
-        where T : class
-    {
-        bool dirtyBit = false;
-        try
-        {
-            var entry = _cache.GetOrAdd(key, _ =>
-            {
-                dirtyBit = true;
-                return new CacheEntry(null);
-            });
-
-            T oldValue = default;
-            if (TryTypeCast(entry, out oldValue))
-            {
-                if (oldValue is IExpirable expirable && expirable.IsExpired)
-                {
-                    // If the value is expired, remove it from cache
-                    _cache.TryRemove(key, out _);
-                    dirtyBit = true;
-                }
-                else
-                {
-                    return oldValue;
-                }
-            }
-
-            await entry.Semaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (TryTypeCast(entry, out oldValue))
-                {
-                    if (oldValue is IExpirable expirable && expirable.IsExpired)
-                    {
-                        // If the value is expired, remove it from cache
-                        _cache.TryRemove(key, out _);
-                        dirtyBit = true;
-                    }
-                    else
-                    {
-                        return oldValue;
-                    }
-                }
-
-                var result = await factory(oldValue).ConfigureAwait(false);
-                entry.Value = result;
-                return result;
-            }
-            finally
-            {
-                entry.Semaphore.Release();
-            }
-        }
-        finally
-        {
-            if (dirtyBit)
-            {
-                await OnCacheUpdated(this).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private bool TryTypeCast<T>(CacheEntry value, out T result)
-    {
-        if (TryTypeCast(value.Value, out result))
-        {
-            if (value.Value is not T)
-            {
-                value.Value = result;
-            }
-
-            return true;
-        }
-
-        result = default!;
-        return false;
-    }
-
-    private bool TryTypeCast<T>(object? value, out T result)
-    {
-        if (value is T t)
-        {
-            result = t;
-            return true;
-        }
-
-        // JsonElement
-        if (value is JsonElement jsonElement)
-        {
-            result = jsonElement.Deserialize<T>();
-            return true;
-        }
-
-        result = default!;
-        return false;
-    }
-
-    public async Task SaveToDiskAsync(string fileName)
-    {
-        var model = _cache.Select(x => new CacheEntryModel(x.Key, x.Value.Value)).ToList();
-
-        var json = JsonSerializer.Serialize(model, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(fileName, json).ConfigureAwait(false);
-    }
-
-    public static InMemoryStorage LoadFromDisk(string fileName)
-    {
-        if (!File.Exists(fileName))
-        {
-            return new InMemoryStorage();
-        }
-
-        var json = File.ReadAllText(fileName);
-
-        var model = JsonSerializer.Deserialize<List<CacheEntryModel>>(json);
-        var cache = new ConcurrentDictionary<string, CacheEntry>(model.Select(x => new KeyValuePair<string, CacheEntry>(x.Key, x.ToCacheEntry())));
-        return new InMemoryStorage(cache);
-    }
-
-    private class CacheEntry
-    {
-        public object? Value { get; set; }
-        public SemaphoreSlim Semaphore { get; }
-
-        public CacheEntry(object? value, SemaphoreSlim? semaphore = null)
-        {
-            Value = value;
-            Semaphore = semaphore ?? new SemaphoreSlim(1, 1);
-        }
-    }
-
-    private class CacheEntryModel
-    {
-        public string Key { get; set; }
-        public object? Value { get; set; }
-
-        public CacheEntryModel(string key, object? value)
-        {
-            Key = key;
-            Value = value;
-        }
-
-        public CacheEntry ToCacheEntry()
-        {
-            return new(Value);
-        }
-    }
-}
 
 internal class XSenseApiClient
 {
@@ -195,6 +29,35 @@ internal class XSenseApiClient
         // 3: If so, refresh the token
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
 
+        await LoginInternal(userName, password, clientInfo);
+
+        var isValid = await _httpClient.TestLogin(clientInfo, _credentials);
+        if (!isValid)
+        {
+            _credentials = null;
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                // No password = User expected to use refresh token
+                // But that didn't work, so we need to authenticate with SRP
+                // But we can't do that without a password
+                return false;
+            }
+
+            _storage.Remove($"login_{userName}");
+            await LoginInternal(userName, password, clientInfo);
+
+            var isValid2 = await _httpClient.TestLogin(clientInfo, _credentials);
+            if (!isValid2)
+            {
+                return false;
+            }
+        }
+
+        return _credentials is not null;
+    }
+
+    private async Task LoginInternal(string userName, string password, ClientInfo clientInfo)
+    {
         _credentials = await _storage.GetOrAddAsync<Credentials>($"login_{userName}", async old =>
         {
             if (old is not null && !old.ShouldRefresh)
@@ -207,10 +70,12 @@ internal class XSenseApiClient
                 return await _httpClient.AuthenticateWithSrpAsync(clientInfo, userName, password).ConfigureAwait(false);
             }
 
-            return await _httpClient.RefreshTokenAsync(clientInfo, old).ConfigureAwait(false);
-        });
+            var refreshValue = await _httpClient.RefreshTokenAsync(clientInfo, old).ConfigureAwait(false);
 
-        return _credentials is not null;
+            refreshValue.UserId = old.UserId;
+
+            return refreshValue;
+        });
     }
 
     private async ValueTask<Credentials> GetCredentialsAsync()
@@ -259,5 +124,69 @@ internal class XSenseApiClient
         var creds = await GetCredentialsAsync().ConfigureAwait(false);
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
         return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
+    }
+
+    private Expirable<AmazonIotDataClient> _iotDataClient;
+
+    public async Task<AmazonIotDataClient> CreateIotDataClientAsync()
+    {
+        if (_iotDataClient is not null && !_iotDataClient.IsExpired)
+        {
+            return _iotDataClient.Value;
+        }
+
+        var creds = await GetCredentialsAsync().ConfigureAwait(false);
+        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
+        AwsIotCredentials iotCreds = await GetIotCredsCached(creds, clientInfo).ConfigureAwait(false);
+
+        var credentials = new SessionAWSCredentials(
+            iotCreds.AccessKeyId,
+            iotCreds.SecretAccessKey,
+            iotCreds.SessionToken
+        );
+
+        var config = new AmazonIotDataConfig
+        {
+            ServiceURL = "https://data.iot.eu-central-1.amazonaws.com",
+            HttpClientFactory = new HttpClientFactoryWithSslDisabled()
+        };
+
+        var cli = new AmazonIotDataClient(credentials, config);
+        _iotDataClient = new Expirable<AmazonIotDataClient>(cli, DateTime.Parse(iotCreds.Expiration) - TimeSpan.FromMinutes(5));
+        return cli;
+    }
+
+    private async Task<AwsIotCredentials> GetIotCredsCached(Credentials creds, ClientInfo clientInfo)
+    {
+        var key = $"iotCreds_{creds.UserId}";
+        return await _storage.GetOrAddAsync<AwsIotCredentials>(key, async old =>
+        {
+            if (old is not null && !old.IsExpired)
+            {
+                return old;
+            }
+
+            return await _httpClient.GetAwsIotCredentials(clientInfo, creds).ConfigureAwait(false);
+        }).ConfigureAwait(false);
+    }
+
+    public async Task<T> GetThingsShadowAsync<T>(string thingShadow, string shadowName)
+    {
+        using var iotClient = await CreateIotDataClientAsync().ConfigureAwait(false);
+        var request = new GetThingShadowRequest
+        {
+            ThingName = thingShadow,
+            ShadowName = shadowName,
+        };
+
+        var response = await iotClient.GetThingShadowAsync(request).ConfigureAwait(false);
+
+        //using var reader = new StreamReader(response.Payload);
+        //string shadowDocument = reader.ReadToEnd();
+
+        // deserialize as T
+        var stream = response.Payload;
+        var json = await JsonSerializer.DeserializeAsync<T>(stream).ConfigureAwait(false);
+        return json;
     }
 }

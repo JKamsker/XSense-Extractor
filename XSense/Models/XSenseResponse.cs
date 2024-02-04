@@ -4,7 +4,13 @@ using XSense.Models.Init;
 
 namespace XSense.Models;
 
-public class XSenseResponse<T>
+public class XSenseResponse<T> : XSenseResponse
+{
+    [JsonPropertyName("reData")]
+    public T ReData { get; set; }
+}
+
+public class XSenseResponse
 {
     [JsonPropertyName("reCode")]
     public long ReCode { get; set; }
@@ -17,7 +23,4 @@ public class XSenseResponse<T>
 
     [JsonPropertyName("cfgVersion")]
     public CfgVersion CfgVersion { get; set; }
-
-    [JsonPropertyName("reData")]
-    public T ReData { get; set; }
 }

@@ -5,6 +5,7 @@ using Amazon.Runtime;
 using System.Text;
 
 using XSense.Models.Sensoric;
+using XSense.Models.Sensoric.Live;
 
 namespace XSense;
 
@@ -25,6 +26,28 @@ internal class Program
 
         foreach (var station in details.Stations)
         {
+            var a = await xsenseApiClient.GetThingsShadowAsync<LiveSensoricData>(
+                $"{station.Category}{station.StationSn}",
+                "2nd_mainpage"
+            );
+
+            var iotClient = await xsenseApiClient.CreateIotDataClientAsync();
+
+            var request = new GetThingShadowRequest
+            {
+                ThingName = $"{station.Category}{station.StationSn}",
+                ShadowName = "2nd_mainpage",
+            };
+
+            var response = await iotClient.GetThingShadowAsync(request);
+
+            // Read the response (the shadow document is in the payload as a memory stream)
+            using (var reader = new StreamReader(response.Payload))
+            {
+                string shadowDocument = reader.ReadToEnd();
+                Console.WriteLine(shadowDocument);
+            }
+
             foreach (var device in station.Devices)
             {
                 var sensoricData = await xsenseApiClient.GetSensoricDataAsync(

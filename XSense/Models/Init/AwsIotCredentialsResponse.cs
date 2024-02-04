@@ -13,7 +13,7 @@ public partial class AwsIotCredentialsResponse : XSenseResponse<AwsIotCredential
     public AwsIotCredentials ReData { get; set; }
 }
 
-public partial class AwsIotCredentials
+public partial class AwsIotCredentials : IExpirable
 {
     [JsonPropertyName("accessKeyId")]
     public string AccessKeyId { get; set; }
@@ -26,4 +26,14 @@ public partial class AwsIotCredentials
 
     [JsonPropertyName("expiration")]
     public string Expiration { get; set; }
+
+    [JsonIgnore]
+    public bool IsExpired => _expiresAt.Value < DateTime.UtcNow - TimeSpan.FromMinutes(5);
+
+    private Lazy<DateTime> _expiresAt;
+
+    public AwsIotCredentials()
+    {
+        _expiresAt = new Lazy<DateTime>(() => DateTime.Parse(Expiration));
+    }
 }
