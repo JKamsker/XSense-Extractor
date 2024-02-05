@@ -172,7 +172,7 @@ internal class XSenseApiClient
 
     public async Task<T> GetThingsShadowAsync<T>(string thingShadow, string shadowName)
     {
-        using var iotClient = await CreateIotDataClientAsync().ConfigureAwait(false);
+        var iotClient = await CreateIotDataClientAsync().ConfigureAwait(false);
         var request = new GetThingShadowRequest
         {
             ThingName = thingShadow,
@@ -180,6 +180,11 @@ internal class XSenseApiClient
         };
 
         var response = await iotClient.GetThingShadowAsync(request).ConfigureAwait(false);
+
+        //iotClient.GetRetainedMessageAsync(new GetRetainedMessageRequest
+        //{
+        //    Topic = "topic"
+        //});
 
         //using var reader = new StreamReader(response.Payload);
         //string shadowDocument = reader.ReadToEnd();

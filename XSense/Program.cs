@@ -3,6 +3,7 @@ using Amazon.IotData.Model;
 using Amazon.Runtime;
 
 using System.Text;
+using System.Text.Json;
 
 using XSense.Models.Sensoric;
 using XSense.Models.Sensoric.Live;
@@ -26,39 +27,45 @@ internal class Program
 
         foreach (var station in details.Stations)
         {
-            var a = await xsenseApiClient.GetThingsShadowAsync<LiveSensoricData>(
-                $"{station.Category}{station.StationSn}",
-                "2nd_mainpage"
-            );
-
-            var iotClient = await xsenseApiClient.CreateIotDataClientAsync();
-
-            var request = new GetThingShadowRequest
+            while (true)
             {
-                ThingName = $"{station.Category}{station.StationSn}",
-                ShadowName = "2nd_mainpage",
-            };
+                var shadowData = await xsenseApiClient.GetThingsShadowAsync<LiveSensoricData>(
+                    $"{station.Category}{station.StationSn}",
+                    "2nd_mainpage"
+                );
 
-            var response = await iotClient.GetThingShadowAsync(request);
+                var serialized = JsonSerializer.Serialize(shadowData);
 
-            // Read the response (the shadow document is in the payload as a memory stream)
-            using (var reader = new StreamReader(response.Payload))
-            {
-                string shadowDocument = reader.ReadToEnd();
-                Console.WriteLine(shadowDocument);
+                foreach (var dev in shadowData.State.Reported.Devs)
+                {
+                    var status = dev.Value.Status;
+                    var prnt = $"Device: {dev.Key}, Temperature: {status.Temperature}, Humidity: {status.Humidity}, BatInfo: {dev.Value.BatInfo}";
+                    Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {prnt}");
+                }
+                Console.WriteLine();
+
+                await Task.Delay(1000);
             }
 
             foreach (var device in station.Devices)
             {
-                var sensoricData = await xsenseApiClient.GetSensoricDataAsync(
-                    new GetSensoricDataRequest
+                var nextToken = "";
+                var lastTime = "0";
+                // Pagination: Loop till NextToken is null or empty
+                do
+                {
+                    var sensoricData = await xsenseApiClient.GetSensoricDataAsync(new GetSensoricDataRequest
                     {
                         HouseId = details.HouseId,
                         StationId = station.StationId,
                         DeviceId = device.DeviceId,
-                        LastTime = "20240123140600"
-                    }
-                );
+                        LastTime = lastTime,
+                        NextToken = nextToken // "2024012314060020240201000000"
+                    });
+
+                    nextToken = sensoricData.NextToken;
+                    lastTime = sensoricData.LastTime;
+                } while (!string.IsNullOrWhiteSpace(nextToken));
             }
         }
 

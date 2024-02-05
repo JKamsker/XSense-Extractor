@@ -264,6 +264,17 @@ public class XSenseHttpClient
         return text?.ReData;
     }
 
+    public async Task<GetSensoricDataResponseData?> GetSensoricData(ClientInfo clientInfo, Credentials creds, GetSensoricDataRequest req)
+    {
+        var response = await SendXSenseRequestAsync(clientInfo, creds, "104011", req);
+
+        //var text = await response.Content.ReadAsStringAsync();
+
+        //GetSensoricDataResponse
+        var parsed = await response.Content.ReadFromJsonAsync<GetSensoricDataResponse>();
+        return parsed?.ReData;
+    }
+
     private async Task<HttpResponseMessage> SendXSenseRequestAsync<T>(ClientInfo clientInfo, Credentials creds, string bizCode, T body)
     {
         clientInfo = clientInfo
@@ -295,15 +306,6 @@ public class XSenseHttpClient
         var response = await _client.SendAsync(request);
         response.EnsureSuccessStatusCode();
         return response;
-    }
-
-    public async Task<GetSensoricDataResponseData> GetSensoricData(ClientInfo clientInfo, Credentials creds, GetSensoricDataRequest req)
-    {
-        var response = await SendXSenseRequestAsync(clientInfo, creds, "104011", req);
-
-        var text = await response.Content.ReadAsStringAsync();
-
-        return default;
     }
 
     //curl -H "Host: api.x-sense-iot.com" -H "authorization: eyJraWQiOiJZMGxoZEF3V3dENHZ3eU1RMHp6UExFUnJtN2F0M2Y2MjNKYzdzeENCSjdvPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJlMjI1MWFiMi00NmU4LTQ5N2EtYWY1Ni00NGQ0YzViZTk1ZjEiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9uWDhtbFQzZFEiLCJjbGllbnRfaWQiOiIxam9rNmNmMm81N25kYWx2MmE2b2wwb2dxaCIsIm9yaWdpbl9qdGkiOiI2MWRkMWFmYy1mOTFlLTQ3MDMtOGU1My03OGM5MGUyYWI2YWQiLCJldmVudF9pZCI6IjJjZmRmMDhlLWM5ZTktNGFhZS04ZGQwLTQ5NzIxMTc4Yjk0ZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE3MDYwNDI4NDksImV4cCI6MTcwNjEyOTI0OSwiaWF0IjoxNzA2MDQyODQ5LCJqdGkiOiIxMTk3ZDg4Zi1iMmNkLTRiYjUtYWM2NS04ZjViNzYxNTg1YjYiLCJ1c2VybmFtZSI6ImUyMjUxYWIyLTQ2ZTgtNDk3YS1hZjU2LTQ0ZDRjNWJlOTVmMSJ9.mwYXLDeI1FIojb3dT_7k_Q6AQLzAnk-uAU5CGCpEcvXSCSBnpWvhAxglInWkOmuP8ChTJ21WcCdv-iVwuRynK_4ilKvOjBib2V0P-1a6RJ82pq0e--_9Bo7kyeVW4ywdBHB38g7Hx1zngGGNpNHGvhpr8TrrWWrjdnvKg0CCjrjCnPG0c-939C35kR9R0Cz3Tn2V3iydJ8u9iPdk_8J5b3uGK1up9xHOG8vsuWzqOkY_H0_0R_-Oz8uMbklL4Slh4Gd-S07LIJT6F-My9mpZ3O_xqs9LhIe89ltZJNaBmkf-gTVxlxvrvQLlQAW0wMRqtJrkqutm3FS-cC6KB68Nlg" -H "userpoolconfig: us-east-1_nX8mlT3dQ#1jok6cf2o57ndalv2a6ol0ogqh" -H "language: de" -H "content-type: application/json; charset=utf-8" -H "user-agent: okhttp/3.14.7" --data-binary "{\"userName\":\"USERNAME\",\"mac\":\"57a252adbc1af382d1d784db2e40e267\",\"bizCode\":\"101003\",\"appCode\":\"1172\",\"appVersion\":\"v1.17.2_20240115\",\"clientType\":\"2\"}" --compressed "https://api.x-sense-iot.com/app"
