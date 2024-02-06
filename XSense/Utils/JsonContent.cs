@@ -1,7 +1,9 @@
-﻿using System.Text;
+﻿global using JsonContent = XSense.Utils.JsonContent;
+
+using System.Text;
 using System.Text.Json;
 
-namespace XSense;
+namespace XSense.Utils;
 
 public class JsonContent : StringContent
 {
@@ -22,5 +24,3 @@ public class JsonContent : StringContent
         return new JsonContent(serialized, Encoding.UTF8, "application/json");
     }
 }
-
-

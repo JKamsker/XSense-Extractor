@@ -9,6 +9,7 @@ using System.Text.Json;
 using XSense.Models;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
+using XSense.Utils;
 
 namespace XSense;
 
@@ -312,39 +313,11 @@ public class XSenseHttpClient
     // GetAwsIotCredentials
     public async Task<AwsIotCredentials> GetAwsIotCredentials(ClientInfo clientInfo, Credentials creds)
     {
-        //ClientInfo clientInfo = await QueryClientInfo()
-        //    ?? throw new InvalidOperationException("ClientInfo is null");
-
-        clientInfo = clientInfo
-            ?? throw new ArgumentNullException(nameof(clientInfo));
-
-        creds = creds
-            ?? throw new ArgumentNullException(nameof(creds));
-
-        using var request = new HttpRequestMessage(new HttpMethod("POST"), "https://api.x-sense-iot.com/app");
-        request.Headers.TryAddWithoutValidation("Host", "api.x-sense-iot.com");
-        request.Headers.TryAddWithoutValidation("authorization", creds.AccessToken);
-        request.Headers.TryAddWithoutValidation("userpoolconfig", clientInfo.UserPoolConfig);
-        request.Headers.TryAddWithoutValidation("language", "de");
-        request.Headers.TryAddWithoutValidation("user-agent", "okhttp/3.14.7");
-
-        request.Content = JsonContent.Create(new
+        var response = await SendXSenseRequestAsync(clientInfo, creds, "101003", new
         {
             userName = creds.UserId,
-            mac = MacUtils.GetRequestMac(new Dictionary<string, object>
-            {
-                { "userName", creds.UserId },
-            }, clientInfo.ClientSecret),
-            bizCode = "101003",
-            appCode = "1172",
-            appVersion = "v1.17.2_20240115",
-            clientType = "2"
         });
 
-        var response = await _client.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        //var text = await response.Content.ReadAsStringAsync();
         var parsed = await response.Content.ReadFromJsonAsync<AwsIotCredentialsResponse>();
 
         if (parsed?.ReData is null)

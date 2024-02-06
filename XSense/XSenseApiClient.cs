@@ -2,11 +2,13 @@
 using Amazon.IotData.Model;
 using Amazon.Runtime;
 
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
+using XSense.Utils;
 
 namespace XSense;
 
@@ -179,6 +181,8 @@ internal class XSenseApiClient
             ShadowName = shadowName,
         };
 
+        await UpdateThingsShadow();
+
         var response = await iotClient.GetThingShadowAsync(request).ConfigureAwait(false);
 
         //iotClient.GetRetainedMessageAsync(new GetRetainedMessageRequest
@@ -193,5 +197,50 @@ internal class XSenseApiClient
         var stream = response.Payload;
         var json = await JsonSerializer.DeserializeAsync<T>(stream).ConfigureAwait(false);
         return json;
+    }
+
+    private async Task UpdateThingsShadow()
+    {
+        var request = new UpdateThingShadowRequest
+        {
+            ThingName = "SBS5013B96457",
+            ShadowName = "2nd_apptempdata",
+            Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+            {
+                state = new
+                {
+                    desired = new
+                    {
+                        deviceSN = new string[] { "00000001", "00000002", "00000003", "00000004" },
+                        report = "1",
+                        reportDst = "1",
+                        shadow = "appTempData",
+                        source = "1",
+                        stationSN = "13B96457",
+                        //time = "20240123214731", // 2024-01-23-21:47:31
+                        time = $"{DateTime.UtcNow:yyyyMMddHHmmss}",
+                        timeoutM = "5",
+                        userId = "e2251ab2-46e8-497a-af56-44d4c5be95f1"
+                    }
+                }
+            })))
+        };
+
+        var client = await CreateIotDataClientAsync().ConfigureAwait(false);
+
+        try
+        {
+            var sw = Stopwatch.StartNew();
+            var response = await client.UpdateThingShadowAsync(request);
+            Console.WriteLine($"Shadow updated successfully. ({sw.Elapsed.TotalMilliseconds}ms)");
+            //var reader = new StreamReader(response.Payload);
+            //var shadowDocument = reader.ReadToEnd();
+            //Console.WriteLine(shadowDocument);
+            //Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating shadow: {ex.Message}");
+        }
     }
 }

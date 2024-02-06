@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace XSense;
+namespace XSense.Utils;
 
 public static class MacUtils
 {

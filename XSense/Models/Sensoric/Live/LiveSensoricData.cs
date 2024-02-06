@@ -279,7 +279,7 @@ public partial class MetadataReported
     public DevNum DevNum { get; set; }
 
     [JsonPropertyName("devs")]
-    public Dictionary<string, PurpleDev> Devs { get; set; }
+    public Dictionary<string, MetadataDev> Devs { get; set; }
 }
 
 public partial class DevNum
@@ -288,7 +288,7 @@ public partial class DevNum
     public long Timestamp { get; set; }
 }
 
-public partial class PurpleDev
+public partial class MetadataDev
 {
     [JsonPropertyName("type")]
     public DevNum Type { get; set; }
@@ -354,10 +354,10 @@ public partial class StateReported
     public string DevNum { get; set; }
 
     [JsonPropertyName("devs")]
-    public Dictionary<string, FluffyDev> Devs { get; set; }
+    public Dictionary<string, StateReportedDev> Devs { get; set; }
 }
 
-public partial class FluffyDev
+public partial class StateReportedDev
 {
     [JsonPropertyName("type")]
     public string Type { get; set; }
@@ -372,7 +372,7 @@ public partial class FluffyDev
     public string Online { get; set; }
 
     [JsonPropertyName("status")]
-    public FluffyStatus Status { get; set; }
+    public ReportedStatus Status { get; set; }
 }
 
 //public partial class FluffyStatus
@@ -429,7 +429,7 @@ public partial class FluffyDev
 ...
  */
 
-public class FluffyStatus
+public class ReportedStatus
 {
     [JsonPropertyName("a")]
     public string Alarmstatus { get; set; }
