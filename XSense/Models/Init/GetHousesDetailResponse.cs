@@ -34,6 +34,9 @@ public partial class GetHousesDetailResponseData
 
 public partial class Station
 {
+    [JsonIgnore]
+    public string ThingName => $"{Category}{StationSn}";
+
     [JsonPropertyName("stationId")]
     public string StationId { get; set; }
 

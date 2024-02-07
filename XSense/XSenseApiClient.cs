@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 
+using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
 using XSense.Utils;
@@ -181,7 +182,7 @@ internal class XSenseApiClient
             ShadowName = shadowName,
         };
 
-        await UpdateThingsShadow();
+        //await UpdateThingsShadow();
 
         var response = await iotClient.GetThingShadowAsync(request).ConfigureAwait(false);
 
@@ -199,34 +200,41 @@ internal class XSenseApiClient
         return json;
     }
 
-    private async Task UpdateThingsShadow()
+    private async Task UpdateThingsShadow(UpdateThermoSensorShadowRequestPayload payload)
     {
-        var request = new UpdateThingShadowRequest
-        {
-            ThingName = "SBS5013B96457",
-            ShadowName = "2nd_apptempdata",
-            Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
-            {
-                state = new
-                {
-                    desired = new
-                    {
-                        deviceSN = new string[] { "00000001", "00000002", "00000003", "00000004" },
-                        report = "1",
-                        reportDst = "1",
-                        shadow = "appTempData",
-                        source = "1",
-                        stationSN = "13B96457",
-                        //time = "20240123214731", // 2024-01-23-21:47:31
-                        time = $"{DateTime.UtcNow:yyyyMMddHHmmss}",
-                        timeoutM = "5",
-                        userId = "e2251ab2-46e8-497a-af56-44d4c5be95f1"
-                    }
-                }
-            })))
-        };
+        //var request = new UpdateThingShadowRequest
+        //{
+        //    ThingName = "SBS5013B96457",
+        //    ShadowName = "2nd_apptempdata",
+        //    Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+        //    {
+        //        state = new
+        //        {
+        //            desired = new
+        //            {
+        //                deviceSN = new string[] { "00000001", "00000002", "00000003", "00000004" },
+        //                report = "1",
+        //                reportDst = "1",
+        //                shadow = "appTempData",
+        //                source = "1",
+        //                stationSN = "13B96457",
+        //                //time = "20240123214731", // 2024-01-23-21:47:31
+        //                time = $"{DateTime.UtcNow:yyyyMMddHHmmss}",
+        //                timeoutM = "5",
+        //                userId = "e2251ab2-46e8-497a-af56-44d4c5be95f1"
+        //            }
+        //        }
+        //    })))
+        //};
 
         var client = await CreateIotDataClientAsync().ConfigureAwait(false);
+
+        var request = new UpdateThingShadowRequest
+        {
+            ThingName = $"{payload.CategoryName}{payload.StationSN}",
+            ShadowName = "2nd_apptempdata",
+            Payload = payload.ToMemoryStream()
+        };
 
         try
         {

@@ -32,7 +32,7 @@ internal class Program
             while (true)
             {
                 var shadowData = await xsenseApiClient.GetThingsShadowAsync<LiveSensoricData>(
-                    $"{station.Category}{station.StationSn}",
+                    $"{station.ThingName}",
                     "2nd_mainpage"
                 );
 
