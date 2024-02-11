@@ -4,6 +4,7 @@ using Amazon.IotData.Model;
 using System.Collections;
 using System.Text.Json;
 
+using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
 using XSense.Models.Sensoric.Live;
@@ -31,6 +32,8 @@ internal class Program
 
             while (true)
             {
+                await xsenseApiClient.UpdateThingsShadow(station);
+
                 var shadowData = await xsenseApiClient.GetThingsShadowAsync<LiveSensoricData>(
                     $"{station.ThingName}",
                     "2nd_mainpage"
@@ -105,7 +108,17 @@ public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
     {
         foreach (var item in _data)
         {
-            Console.WriteLine($"Device: {item.Device?.DeviceName}, Temperature: {item.Temperature}, Humidity: {item.Humidity}, BatInfo: {item.BatInfo}");
+            //var paddedName = item.Device?.DeviceName.PadRight(20);
+            var minLen = 20;
+            var paddedName = item.Device?.DeviceName.Length > minLen
+                ? item.Device?.DeviceName.Substring(0, minLen)
+                : item.Device?.DeviceName.PadRight(minLen);
+
+            Console.WriteLine(
+                $"Device: {paddedName} \t" +
+                $"Temperature: {item.Temperature} \t" +
+                $"Humidity: {item.Humidity} \t" +
+                $"BatInfo: {item.BatInfo}");
         }
     }
 

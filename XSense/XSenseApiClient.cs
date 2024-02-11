@@ -3,7 +3,6 @@ using Amazon.IotData.Model;
 using Amazon.Runtime;
 
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 using XSense.Models.Aws;
@@ -18,6 +17,9 @@ internal class XSenseApiClient
     private readonly XSenseHttpClient _httpClient;
     private readonly InMemoryStorage _storage;
     private Credentials _credentials;
+
+    // Should be userid (GUID)
+    public string Username => _credentials.Username;
 
     public XSenseApiClient(XSenseHttpClient httpClient, InMemoryStorage? storage = null)
     {
@@ -200,33 +202,20 @@ internal class XSenseApiClient
         return json;
     }
 
-    private async Task UpdateThingsShadow(UpdateThermoSensorShadowRequestPayload payload)
+    public async Task UpdateThingsShadow(Station station)
     {
-        //var request = new UpdateThingShadowRequest
-        //{
-        //    ThingName = "SBS5013B96457",
-        //    ShadowName = "2nd_apptempdata",
-        //    Payload = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
-        //    {
-        //        state = new
-        //        {
-        //            desired = new
-        //            {
-        //                deviceSN = new string[] { "00000001", "00000002", "00000003", "00000004" },
-        //                report = "1",
-        //                reportDst = "1",
-        //                shadow = "appTempData",
-        //                source = "1",
-        //                stationSN = "13B96457",
-        //                //time = "20240123214731", // 2024-01-23-21:47:31
-        //                time = $"{DateTime.UtcNow:yyyyMMddHHmmss}",
-        //                timeoutM = "5",
-        //                userId = "e2251ab2-46e8-497a-af56-44d4c5be95f1"
-        //            }
-        //        }
-        //    })))
-        //};
+        var payload = new UpdateThermoSensorShadowRequestPayload(
+            _credentials.Username,
+            station.Category,
+            station.StationSn,
+            station.Devices.Select(d => d.DeviceSn).ToArray()
+        );
 
+        await UpdateThingsShadow(payload);
+    }
+
+    public async Task UpdateThingsShadow(UpdateThermoSensorShadowRequestPayload payload)
+    {
         var client = await CreateIotDataClientAsync().ConfigureAwait(false);
 
         var request = new UpdateThingShadowRequest

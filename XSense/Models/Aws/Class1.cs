@@ -92,8 +92,13 @@ public class UpdateThermoSensorShadowRequestPayload
         TimeoutM = "5";
     }
 
-    public MemoryStream ToMemoryStream()
+    public MemoryStream ToMemoryStream(bool setTime = true)
     {
+        if (setTime)
+        {
+            Time = $"{DateTime.UtcNow:yyyyMMddHHmmss}";
+        }
+
         var obj = new
         {
             state = new
