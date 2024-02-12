@@ -5,9 +5,11 @@ using Amazon.Runtime;
 using System.Diagnostics;
 using System.Text.Json;
 
+using XSense.Clients;
 using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
+using XSense.Models.Sensoric.Live;
 using XSense.Utils;
 
 namespace XSense;
@@ -16,6 +18,7 @@ internal class XSenseApiClient
 {
     private readonly XSenseHttpClient _httpClient;
     private readonly InMemoryStorage _storage;
+    private readonly XSenseAwsIotClient _iotClient;
     private Credentials _credentials;
 
     // Should be userid (GUID)
@@ -25,6 +28,7 @@ internal class XSenseApiClient
     {
         _httpClient = httpClient;
         _storage = storage ?? new InMemoryStorage();
+        _iotClient = new XSenseAwsIotClient(this, httpClient, _storage);
     }
 
     public async Task<bool> LoginAsync(string userName, string password)
@@ -83,7 +87,7 @@ internal class XSenseApiClient
         });
     }
 
-    private async ValueTask<Credentials> GetCredentialsAsync()
+    internal async ValueTask<Credentials> GetCredentialsAsync()
     {
         var creds = _credentials ?? throw new InvalidOperationException("Not logged in");
 
@@ -100,7 +104,7 @@ internal class XSenseApiClient
         });
     }
 
-    private async ValueTask<ClientInfo> GetClientInfoAsync()
+    internal async ValueTask<ClientInfo> GetClientInfoAsync()
     {
         return await _storage.GetOrAddAsync<ClientInfo>("clientInfo", async _ =>
         {
@@ -131,113 +135,15 @@ internal class XSenseApiClient
         return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
     }
 
-    private Expirable<AmazonIotDataClient> _iotDataClient;
-
-    public async Task<AmazonIotDataClient> CreateIotDataClientAsync()
+    public async Task<LiveSensoricData> PollSensoricDataAsync(Station station)
     {
-        if (_iotDataClient is not null && !_iotDataClient.IsExpired)
-        {
-            return _iotDataClient.Value;
-        }
+        await _iotClient.UpdateThingsShadow(station);
 
-        var creds = await GetCredentialsAsync().ConfigureAwait(false);
-        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
-        AwsIotCredentials iotCreds = await GetIotCredsCached(creds, clientInfo).ConfigureAwait(false);
-
-        var credentials = new SessionAWSCredentials(
-            iotCreds.AccessKeyId,
-            iotCreds.SecretAccessKey,
-            iotCreds.SessionToken
+        var shadowData = await _iotClient.GetThingsShadowAsync<LiveSensoricData>(
+            $"{station.ThingName}",
+            "2nd_mainpage"
         );
 
-        var config = new AmazonIotDataConfig
-        {
-            ServiceURL = "https://data.iot.eu-central-1.amazonaws.com",
-            HttpClientFactory = new HttpClientFactoryWithSslDisabled()
-        };
-
-        var cli = new AmazonIotDataClient(credentials, config);
-        _iotDataClient = new Expirable<AmazonIotDataClient>(cli, DateTime.Parse(iotCreds.Expiration) - TimeSpan.FromMinutes(5));
-        return cli;
-    }
-
-    private async Task<AwsIotCredentials> GetIotCredsCached(Credentials creds, ClientInfo clientInfo)
-    {
-        var key = $"iotCreds_{creds.UserId}";
-        return await _storage.GetOrAddAsync<AwsIotCredentials>(key, async old =>
-        {
-            if (old is not null && !old.IsExpired)
-            {
-                return old;
-            }
-
-            return await _httpClient.GetAwsIotCredentials(clientInfo, creds).ConfigureAwait(false);
-        }).ConfigureAwait(false);
-    }
-
-    public async Task<T> GetThingsShadowAsync<T>(string thingShadow, string shadowName)
-    {
-        var iotClient = await CreateIotDataClientAsync().ConfigureAwait(false);
-        var request = new GetThingShadowRequest
-        {
-            ThingName = thingShadow,
-            ShadowName = shadowName,
-        };
-
-        //await UpdateThingsShadow();
-
-        var response = await iotClient.GetThingShadowAsync(request).ConfigureAwait(false);
-
-        //iotClient.GetRetainedMessageAsync(new GetRetainedMessageRequest
-        //{
-        //    Topic = "topic"
-        //});
-
-        //using var reader = new StreamReader(response.Payload);
-        //string shadowDocument = reader.ReadToEnd();
-
-        // deserialize as T
-        var stream = response.Payload;
-        var json = await JsonSerializer.DeserializeAsync<T>(stream).ConfigureAwait(false);
-        return json;
-    }
-
-    public async Task UpdateThingsShadow(Station station)
-    {
-        var payload = new UpdateThermoSensorShadowRequestPayload(
-            _credentials.Username,
-            station.Category,
-            station.StationSn,
-            station.Devices.Select(d => d.DeviceSn).ToArray()
-        );
-
-        await UpdateThingsShadow(payload);
-    }
-
-    public async Task UpdateThingsShadow(UpdateThermoSensorShadowRequestPayload payload)
-    {
-        var client = await CreateIotDataClientAsync().ConfigureAwait(false);
-
-        var request = new UpdateThingShadowRequest
-        {
-            ThingName = $"{payload.CategoryName}{payload.StationSN}",
-            ShadowName = "2nd_apptempdata",
-            Payload = payload.ToMemoryStream()
-        };
-
-        try
-        {
-            var sw = Stopwatch.StartNew();
-            var response = await client.UpdateThingShadowAsync(request);
-            Console.WriteLine($"Shadow updated successfully. ({sw.Elapsed.TotalMilliseconds}ms)");
-            //var reader = new StreamReader(response.Payload);
-            //var shadowDocument = reader.ReadToEnd();
-            //Console.WriteLine(shadowDocument);
-            //Console.WriteLine();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating shadow: {ex.Message}");
-        }
+        return shadowData;
     }
 }
