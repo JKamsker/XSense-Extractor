@@ -13,7 +13,7 @@ namespace XSense;
 
 internal class Program
 {
-    private static async Task Main(string[] args)
+    private static async Task MainX()
     {
         var storage = InMemoryStorage.LoadFromDisk("strorage.json");
         storage.OnCacheUpdated = async s => await s.SaveToDiskAsync("strorage.json");
@@ -153,3 +153,11 @@ public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
         return ((IEnumerable)_data).GetEnumerator();
     }
 }
+
+/*
+ * Console Application:
+ *  - Login: xsense.exe login --username abc --password 123
+ *  - GetStations: xsense.exe stations list // Lists all stations of all houses (Optional --houseId)
+ *  - Monitor live data: xsense.exe monitor --stationId 123
+ *  - Get History: xsense.exe history [--stationId 123] [--deviceId 456] --from 2022-01-01 --to 2022-01-02 [--disable-smart-stop] // Smart stop: Stop when no data is available for 3 consecutive months
+ */

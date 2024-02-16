@@ -1,4 +1,5 @@
-﻿using Amazon.IotData;
+﻿using Amazon.CognitoIdentityProvider.Model;
+using Amazon.IotData;
 using Amazon.IotData.Model;
 using Amazon.Runtime;
 
@@ -14,7 +15,7 @@ using XSense.Utils;
 
 namespace XSense;
 
-internal class XSenseApiClient
+public class XSenseApiClient
 {
     private readonly XSenseHttpClient _httpClient;
     private readonly InMemoryStorage _storage;
@@ -37,8 +38,18 @@ internal class XSenseApiClient
         // 2: If not, authenticate with SRP
         // 3: If so, refresh the token
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
-
-        await LoginInternal(userName, password, clientInfo);
+        try
+        {
+            await LoginInternal(userName, password, clientInfo);
+        }
+        catch (Exception e)
+        {
+            if (e is UserNotFoundException || e is NotAuthorizedException)
+            {
+                return false;
+            }
+            throw;
+        }
 
         var isValid = await _httpClient.TestLogin(clientInfo, _credentials);
         if (!isValid)

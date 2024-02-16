@@ -71,6 +71,7 @@ public class InMemoryStorage
                 var result = await factory(oldValue).ConfigureAwait(false);
                 if (result is not null)
                 {
+                    dirtyBit = true;
                     entry.Value = result;
                     return result;
                 }
