@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Text.Json;
 
 using XSense.Clients;
+using XSense.Database;
 using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
@@ -18,21 +19,35 @@ namespace XSense;
 public class XSenseApiClient
 {
     private readonly XSenseHttpClient _httpClient;
-    private readonly InMemoryStorage _storage;
+    private readonly XDao _dao;
+
     private readonly XSenseAwsIotClient _iotClient;
+
     private Credentials _credentials;
 
     // Should be userid (GUID)
     public string Username => _credentials.Username;
 
-    public XSenseApiClient(XSenseHttpClient httpClient, InMemoryStorage? storage = null)
+    public XSenseApiClient(XSenseHttpClient httpClient, XDao dao)
     {
         _httpClient = httpClient;
-        _storage = storage ?? new InMemoryStorage();
-        _iotClient = new XSenseAwsIotClient(this, httpClient, _storage);
+        _dao = dao;
+        //_storage = storage ?? new InMemoryStorage();
+        _iotClient = new XSenseAwsIotClient(this, httpClient, dao);
     }
 
-    public async Task<bool> LoginAsync(string userName, string password)
+    public async Task<bool> LoginWithLastUserAsync()
+    {
+        var settings = await _dao.GetSettingsAsync();
+        if (string.IsNullOrWhiteSpace(settings.LastUser))
+        {
+            return false;
+        }
+
+        return await LoginAsync(settings.LastUser, null);
+    }
+
+    public async Task<bool> LoginAsync(string userName, string? password)
     {
         // 1: Check if we have a valid refresh token
         // 2: If not, authenticate with SRP
@@ -63,7 +78,7 @@ public class XSenseApiClient
                 return false;
             }
 
-            _storage.Remove($"login_{userName}");
+            _dao.DeleteCredentials(userName);
             await LoginInternal(userName, password, clientInfo);
 
             var isValid2 = await _httpClient.TestLogin(clientInfo, _credentials);
@@ -73,12 +88,21 @@ public class XSenseApiClient
             }
         }
 
-        return _credentials is not null;
+        var success = _credentials is not null;
+
+        if (success)
+        {
+            var settings = await _dao.GetSettingsAsync();
+            settings.LastUser = userName;
+
+            await _dao.SaveChangesAsync();
+        }
+        return success;
     }
 
     private async Task LoginInternal(string userName, string password, ClientInfo clientInfo)
     {
-        _credentials = await _storage.GetOrAddAsync<Credentials>($"login_{userName}", async old =>
+        _credentials = await _dao.GetOrAddCredentialsAsync(userName, async old =>
         {
             if (old is not null && !old.ShouldRefresh)
             {
@@ -102,7 +126,7 @@ public class XSenseApiClient
     {
         var creds = _credentials ?? throw new InvalidOperationException("Not logged in");
 
-        return await _storage.GetOrAddAsync<Credentials>($"login_{creds.UserId}", async old =>
+        return await _dao.GetOrAddCredentialsAsync(creds.UserId, async old =>
         {
             _ = old ?? throw new InvalidOperationException("Not logged in");
             if (!old.ShouldRefresh)
@@ -117,7 +141,7 @@ public class XSenseApiClient
 
     internal async ValueTask<ClientInfo> GetClientInfoAsync()
     {
-        return await _storage.GetOrAddAsync<ClientInfo>("clientInfo", async _ =>
+        return await _dao.GetOrAddClientInfoAsync(async _ =>
         {
             var clientInfo = await _httpClient.QueryClientInfo().ConfigureAwait(false);
             return clientInfo;

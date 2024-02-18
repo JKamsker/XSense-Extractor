@@ -1,9 +1,18 @@
 ﻿using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace XSense;
+namespace XSense.Database;
 
-public class InMemoryStorage
+public interface IStorage
+{
+    ValueTask<T> GetOrAddAsync<T>(string key, Func<T, ValueTask<T>> factory) where T : class;
+
+    void Remove(string key);
+
+    Task SaveChangesAsync();
+}
+
+public class InMemoryStorage : IStorage
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -31,19 +40,6 @@ public class InMemoryStorage
             });
 
             T oldValue = default;
-            //if (TryTypeCast(entry, out oldValue))
-            //{
-            //    if (oldValue is IExpirable expirable && expirable.IsExpired)
-            //    {
-            //        // If the value is expired, remove it from cache
-            //        _cache.TryRemove(key, out _);
-            //        dirtyBit = true;
-            //    }
-            //    else
-            //    {
-            //        return oldValue;
-            //    }
-            //}
 
             // Happy path: No converting, just cast
             if (entry.Value is T t && t is not null && !(t is IExpirable expirable && expirable.IsExpired))
@@ -135,7 +131,7 @@ public class InMemoryStorage
         await File.WriteAllTextAsync(fileName, json).ConfigureAwait(false);
     }
 
-    public static InMemoryStorage LoadFromDisk(string fileName)
+    public static InMemoryStorage LoadFromDisk(string fileName, bool readOnly = true)
     {
         if (!File.Exists(fileName))
         {
@@ -146,12 +142,23 @@ public class InMemoryStorage
 
         var model = JsonSerializer.Deserialize<List<CacheEntryModel>>(json);
         var cache = new ConcurrentDictionary<string, CacheEntry>(model.Select(x => new KeyValuePair<string, CacheEntry>(x.Key, x.ToCacheEntry())));
-        return new InMemoryStorage(cache);
+        var storage = new InMemoryStorage(cache);
+
+        if (!readOnly)
+        {
+            storage.OnCacheUpdated = async s => await s.SaveToDiskAsync(fileName);
+        }
+        return storage;
     }
 
     public void Remove(string key)
     {
         _cache.TryRemove(key, out _);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await OnCacheUpdated(this);
     }
 
     private class CacheEntry

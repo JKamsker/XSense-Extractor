@@ -4,6 +4,7 @@ using Amazon.IotData.Model;
 using System.Collections;
 using System.Text.Json;
 
+using XSense.Database;
 using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
@@ -18,8 +19,10 @@ internal class Program
         var storage = InMemoryStorage.LoadFromDisk("strorage.json");
         storage.OnCacheUpdated = async s => await s.SaveToDiskAsync("strorage.json");
 
+        var dao = new XDao(storage);
+
         var xsenseClient = new XSenseHttpClient(new HttpClient());
-        var xsenseApiClient = new XSenseApiClient(xsenseClient, storage);
+        var xsenseApiClient = new XSenseApiClient(xsenseClient, dao);
 
         await xsenseApiClient.LoginAsync("USERNAME", "PASSWORD");
 
@@ -73,6 +76,20 @@ internal class Program
     }
 }
 
+public class LiveSensoricDataMapper
+{
+    public static IEnumerable<LiveSensoricDataDto> Map(LiveSensoricData data, Station station)
+    {
+        foreach (var dev in data.State.Reported.Devs)
+        {
+            var device = station.Devices.FirstOrDefault(d => string.Equals(d.DeviceSn, dev.Key, StringComparison.OrdinalIgnoreCase));
+
+            var status = dev.Value.Status;
+            yield return new LiveSensoricDataDto(device, status.Temperature, status.Humidity, dev.Value.BatInfo);
+        }
+    }
+}
+
 public record LiveSensoricDataDto(Device? Device, string Temperature, string Humidity, string BatInfo);
 
 public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
@@ -88,15 +105,33 @@ public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
         Add(data, station);
     }
 
+    public LiveSensoricDataCollection(List<LiveSensoricDataDto> data)
+    {
+        AddRange(data);
+    }
+
     public void Add(LiveSensoricData data, Station station)
     {
-        foreach (var dev in data.State.Reported.Devs)
-        {
-            var device = station.Devices.FirstOrDefault(d => string.Equals(d.DeviceSn, dev.Key, StringComparison.OrdinalIgnoreCase));
+        //foreach (var dev in data.State.Reported.Devs)
+        //{
+        //    var device = station.Devices.FirstOrDefault(d => string.Equals(d.DeviceSn, dev.Key, StringComparison.OrdinalIgnoreCase));
 
-            var status = dev.Value.Status;
-            _data.Add(new LiveSensoricDataDto(device, status.Temperature, status.Humidity, dev.Value.BatInfo));
-        }
+        //    var status = dev.Value.Status;
+        //    _data.Add(new LiveSensoricDataDto(device, status.Temperature, status.Humidity, dev.Value.BatInfo));
+        //}
+
+        var mapped = LiveSensoricDataMapper.Map(data, station);
+        _data.AddRange(mapped);
+    }
+
+    public void Add(LiveSensoricDataDto data)
+    {
+        _data.Add(data);
+    }
+
+    public void AddRange(IEnumerable<LiveSensoricDataDto> data)
+    {
+        _data.AddRange(data);
     }
 
     public void Print()

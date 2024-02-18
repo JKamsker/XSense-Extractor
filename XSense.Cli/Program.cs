@@ -1,59 +1,81 @@
-﻿using System;
-
-using JKToolKit.Spectre.AutoCompletion.Completion;
+﻿using JKToolKit.Spectre.AutoCompletion.Completion;
 using JKToolKit.Spectre.AutoCompletion.Integrations;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 using Spectre.Console;
 using Spectre.Console.Cli;
+using Spectre.Console.Extensions.Hosting;
+
+using XSense.Database;
+using XSense.Models.Init;
 
 namespace XSense.Cli;
 
 internal class Program
 {
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         args = GetDebugParams(args);
 
-        var app = new CommandApp();
+        await Host.CreateDefaultBuilder(args)
+           .UseConsoleLifetime()
+           .ConfigureServices((_, services) =>
+            {
+                services.AddSingleton<IStorage>(InMemoryStorage.LoadFromDisk("storage.json", false));
+                services.AddSingleton<XDao>();
 
-        app.Configure(config =>
-        {
-            config.AddAutoCompletion(x => x.AddPowershell());
+                services.AddSingleton<HttpClient>();
+                services.AddSingleton<XSenseHttpClient>();
+                services.AddSingleton<XSenseApiClient>();
+            })
+           .UseSpectreConsole(config =>
+           {
+               config.UseArgs(args);
+#if DEBUG
+               config.PropagateExceptions();
+               config.ValidateExamples();
+#endif
 
-            config.PropagateExceptions();
+               //config.AddCommand<AddCommand>("add");
+               //config.AddCommand<CommitCommand>("commit");
+               //config.AddCommand<RebaseCommand>("rebase");
 
-            config.AddCommand<LoginCommand>("login")
-                .WithDescription("Logs into the system")
-                .WithExample(new[] { "login", "--username", "abc", "--password", "123" })
-                //.WithOption("username", 'u', "The username")
-                //.WithOption("password", 'p', "The password")
-                ;
+               config.AddAutoCompletion(x => x.AddPowershell());
 
-            config.AddCommand<GetStationsCommand>("stations")
-                .WithDescription("Lists all stations of all houses")
-                .WithExample(new[] { "stations", "list" })
-                //.AddAlias("list")
-                //.WithOption("houseId", 'h', "Optional house ID to filter stations")
-                ;
+               config.AddCommand<LoginCommand>("login")
+                   .WithDescription("Logs into the system")
+                   .WithExample(new string[] { "login", "--username", "abc", "--password", "123" })
+                   //.WithOption("username", 'u', "The username")
+                   //.WithOption("password", 'p', "The password")
+                   ;
 
-            config.AddCommand<MonitorLiveDataCommand>("monitor")
-                .WithDescription("Monitor live data for a station")
-                .WithExample(new[] { "monitor", "--stationId", "123" })
-                //.WithOption("stationId", 's', "The station ID to monitor")
-                ;
+               config.AddCommand<GetStationsCommand>("stations")
+                   .WithDescription("Lists all stations of all houses")
+                   //.WithExample(new[] { "stations", "list" })
+                   //.AddAlias("list")
+                   //.WithOption("houseId", 'h', "Optional house ID to filter stations")
+                   ;
 
-            config.AddCommand<GetHistoryCommand>("history")
-                .WithDescription("Get history for a station or device within a date range")
-                .WithExample(new[] { "history", "--stationId", "123", "--from", "2022-01-01", "--to", "2022-01-02" })
-                //.WithOption("stationId", 's', "Optional station ID")
-                //.WithOption("deviceId", 'd', "Optional device ID")
-                //.WithOption("from", 'f', "Start date for the history")
-                //.WithOption("to", 't', "End date for the history")
-                //.WithOption("disable-smart-stop", 'n', "Disable smart stop feature", false);
-                ;
-        });
+               config.AddCommand<MonitorLiveDataCommand>("monitor")
+                   .WithDescription("Monitor live data for a station")
+                   //.WithExample(new[] { "monitor", "--stationId", "123" })
+                   //.WithOption("stationId", 's', "The station ID to monitor")
+                   ;
 
-        return app.Run(args);
+               config.AddCommand<GetHistoryCommand>("history")
+                   .WithDescription("Get history for a station or device within a date range")
+                   //.WithExample(new[] { "history", "--stationId", "123", "--from", "2022-01-01", "--to", "2022-01-02" })
+                   //.WithOption("stationId", 's', "Optional station ID")
+                   //.WithOption("deviceId", 'd', "Optional device ID")
+                   //.WithOption("from", 'f', "Start date for the history")
+                   //.WithOption("to", 't', "End date for the history")
+                   //.WithOption("disable-smart-stop", 'n', "Disable smart stop feature", false);
+                   ;
+           })
+           .RunConsoleAsync();
+        return Environment.ExitCode;
     }
 
     private static string[] GetDebugParams(string[] args)
@@ -66,87 +88,16 @@ internal class Program
         {
             //return new[] { "login", "--username", "abc", "--password", "123" };
             //return new[] { "login", "--username", "USERNAME", "--password", "123" };
-            return new[] { "login", "--username", "USERNAME", "--password", "PASSWORD" };
+            // return new[] { "login", "--username", "USERNAME", "--password", "PASSWORD" };
+
+            //MonitorLiveDataCommand
+            //return new[] { "monitor" };
+
+            // gets all stations
+            return new[] { "stations" };
         }
 
         return args;
-    }
-}
-
-internal class LoginCommand : AsyncCommand<LoginCommand.Settings>
-{
-    public class Settings : CommandSettings
-    {
-        [CommandOption("--username <USERNAME>")]
-        public string Username { get; set; }
-
-        [CommandOption("--password <PASSWORD>")]
-        public string Password { get; set; }
-
-        public override ValidationResult Validate()
-        {
-            if (string.IsNullOrWhiteSpace(Username))
-            {
-                return ValidationResult.Error("Username is required");
-            }
-
-            if (string.IsNullOrWhiteSpace(Password))
-            {
-                return ValidationResult.Error("Password is required");
-            }
-
-            return base.Validate();
-        }
-    }
-
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
-    {
-        var storage = InMemoryStorage.LoadFromDisk("strorage.json");
-        storage.OnCacheUpdated = async s => await s.SaveToDiskAsync("strorage.json");
-
-        var xsenseClient = new XSenseHttpClient(new HttpClient());
-        var xsenseApiClient = new XSenseApiClient(xsenseClient, storage);
-
-        AnsiConsole.Markup($"Logging in as [Yellow]{settings.Username}[/]...");
-
-        var success = await xsenseApiClient.LoginAsync(settings.Username, settings.Password);
-
-        if (success)
-        {
-            AnsiConsole.MarkupLine($"[green]Success![/]");
-            return 0;
-        }
-        else
-        {
-            AnsiConsole.MarkupLine("[red]Login failed[/]");
-            return 1;
-        }
-    }
-}
-
-internal class GetStationsCommand : Command
-{
-    public override int Execute(CommandContext context)
-    {
-        // Implement get stations logic here
-        AnsiConsole.MarkupLine("Listing all stations...");
-        return 0;
-    }
-}
-
-internal class MonitorLiveDataCommand : Command<MonitorLiveDataCommand.Settings>
-{
-    public class Settings : CommandSettings
-    {
-        [CommandOption("--stationId <STATIONID>")]
-        public int StationId { get; set; }
-    }
-
-    public override int Execute(CommandContext context, Settings settings)
-    {
-        // Implement monitor live data logic here
-        AnsiConsole.MarkupLine($"Monitoring station [green]{settings.StationId}[/]...");
-        return 0;
     }
 }
 

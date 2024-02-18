@@ -15,6 +15,7 @@ using XSense.Models.Aws;
 using XSense.Models.Init;
 
 using XSense.Utils;
+using XSense.Database;
 
 namespace XSense.Clients;
 
@@ -22,13 +23,15 @@ internal class XSenseAwsIotClient
 {
     private readonly XSenseApiClient _apiClient;
     private readonly XSenseHttpClient _httpClient;
-    private readonly InMemoryStorage? _storage;
+    private readonly XDao _dao;
+    //private readonly InMemoryStorage? _storage;
 
-    public XSenseAwsIotClient(XSenseApiClient apiClient, XSenseHttpClient httpClient, InMemoryStorage? storage)
+    public XSenseAwsIotClient(XSenseApiClient apiClient, XSenseHttpClient httpClient, XDao dao)
     {
         _apiClient = apiClient;
         _httpClient = httpClient;
-        _storage = storage;
+        _dao = dao;
+        //_storage = storage;
     }
 
     private Expirable<AmazonIotDataClient> _iotDataClient;
@@ -63,8 +66,7 @@ internal class XSenseAwsIotClient
 
     private async Task<AwsIotCredentials> GetIotCredsCached(Credentials creds, ClientInfo clientInfo)
     {
-        var key = $"iotCreds_{creds.UserId}";
-        return await _storage.GetOrAddAsync<AwsIotCredentials>(key, async old =>
+        return await _dao.GetOrAddIotCredsAsync(creds.UserId, async old =>
         {
             if (old is not null && !old.IsExpired)
             {

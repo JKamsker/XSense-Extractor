@@ -10,8 +10,11 @@
   <ItemGroup>
     <PackageReference Include="JKToolKit.Spectre.AutoCompletion" Version="0.0.4" />
     <PackageReference Include="JKToolKit.Spectre.AutoCompletion.Integrations" Version="0.0.4" />
+    <PackageReference Include="JKToolKit.Spectre.Console.Extensions.Hosting-ng" Version="0.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Spectre.Console" Version="0.48.1-preview.0.28" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.28" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
