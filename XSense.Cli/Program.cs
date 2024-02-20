@@ -10,6 +10,7 @@ using Spectre.Console.Extensions.Hosting;
 
 using XSense.Database;
 using XSense.Models.Init;
+using XSense.Models.Sensoric;
 
 namespace XSense.Cli;
 
@@ -101,8 +102,10 @@ internal class Program
     }
 }
 
-internal class GetHistoryCommand : Command<GetHistoryCommand.Settings>
+internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
 {
+    private readonly XSenseApiClient _apiClient;
+
     public class Settings : CommandSettings
     {
         [CommandOption("--stationId <STATIONID>")]
@@ -121,10 +124,53 @@ internal class GetHistoryCommand : Command<GetHistoryCommand.Settings>
         public bool DisableSmartStop { get; set; }
     }
 
-    public override int Execute(CommandContext context, Settings settings)
+    public GetHistoryCommand(XSenseApiClient apiClient)
     {
-        // Implement get history logic here
-        AnsiConsole.MarkupLine($"Getting history from [green]{settings.From}[/] to [green]{settings.To}[/]...");
+        _apiClient = apiClient;
+    }
+
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    {
+        var loggedIn = await _apiClient.LoginWithLastUserAsync();
+        if (!loggedIn)
+        {
+            AnsiConsole.MarkupLine("[red]Login failed[/]");
+            return 1;
+        }
+        var houses = await _apiClient.GetHousesAsync();
+        //var details = await xsenseApiClient.GetHouseDetailsAsync(houses[0].HouseId);
+        foreach (var house in houses)
+        {
+            var details = await _apiClient.GetHouseDetailsAsync(house.HouseId);
+            foreach (var station in details.Stations)
+            {
+                foreach (var device in station.Devices)
+                {
+                    await Sensorics(details, station, device);
+                }
+            }
+        }
+
         return 0;
+    }
+
+    private async Task Sensorics(GetHousesDetailResponseData details, Station station, Device device)
+    {
+        var nextToken = "";
+        var lastTime = "0";
+        // Pagination: Loop till NextToken is null or empty
+        do
+        {
+            var request = new GetSensoricDataRequest(details, station, device)
+            {
+                LastTime = lastTime,
+                NextToken = nextToken
+            };
+
+            var sensoricData = await _apiClient.GetSensoricDataAsync(request);
+
+            nextToken = sensoricData.NextToken;
+            lastTime = sensoricData.LastTime;
+        } while (!string.IsNullOrWhiteSpace(nextToken));
     }
 }

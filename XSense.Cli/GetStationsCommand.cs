@@ -28,19 +28,48 @@ internal class GetStationsCommand : AsyncCommand
         {
             var details = await _apiClient.GetHouseDetailsAsync(house.HouseId);
 
-            //AnsiConsole.MarkupLine($"House [yellow]{house.HouseId}[/]");
-            Console.WriteLine($"House [{house.HouseId}] {house.HouseName}:");
+            AnsiConsole.MarkupLine($"[bold]House[/] [underline]{house.HouseId}[/]");
+            var table = new Table();
+
+            // Configure table headers
+            table.AddColumn("[bold]Station Name[/]");
+            table.AddColumn("[bold]Station ID[/]");
+            table.AddColumn("[bold]Device Name[/]");
+            table.AddColumn("[bold]Device ID[/]");
 
             foreach (var station in details.Stations)
             {
-                //yield return station;
-                //AnsiConsole.MarkupLine($"House: [yellow]{house.HouseId}[/] - Station: [green]{station.StationId}[/]");
-                // [HouseId] HouseName: [StationId] StationName
-                //AnsiConsole.MarkupLine($"[[{house.HouseId}]] {house.HouseName}: [[{station.StationId}]] {station.StationName}");
+                // This will track if we've added the first device for a station
+                // to avoid repeating the station info for each device
+                bool firstDevice = true;
 
-                //AnsiConsole.MarkupLine($"\t[green]{station.StationId}[/] {station.StationName}");
-                Console.WriteLine($"\tStation [{station.StationId}] {station.StationName}");
+                foreach (var device in station.Devices)
+                {
+                    if (firstDevice)
+                    {
+                        table.AddRow(station.StationName, station.StationId, device.DeviceName, device.DeviceId);
+                        firstDevice = false;
+                    }
+                    else
+                    {
+                        // For additional devices, we don't repeat the station info
+                        table.AddRow("", "", device.DeviceName, device.DeviceId);
+                    }
+                }
+
+                // If a station has no devices, we still want to list the station
+                if (station.Devices.Length == 0)
+                {
+                    table.AddRow(station.StationName, station.StationId, "-", "-");
+                }
             }
+
+            // Style the table
+            table.Border(TableBorder.Rounded);
+            table.Title($"[underline bold]Devices in House {house.HouseId}[/]");
+            AnsiConsole.Write(table);
+
+            AnsiConsole.WriteLine(); // Add a blank line for better readability between houses
         }
 
         return 0;

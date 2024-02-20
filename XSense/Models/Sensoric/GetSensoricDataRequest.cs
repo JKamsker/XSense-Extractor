@@ -5,6 +5,8 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
+using XSense.Models.Init;
+
 namespace XSense.Models.Sensoric;
 
 public class GetSensoricDataRequest
@@ -33,6 +35,19 @@ public class GetSensoricDataRequest
     // ignore when null
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? NextToken { get; set; }
+
+    public GetSensoricDataRequest()
+    {
+    }
+
+    public GetSensoricDataRequest(GetHousesDetailResponseData details, Station station, Device device)
+    {
+        HouseId = details.HouseId;
+        StationId = station.StationId;
+        DeviceId = device.DeviceId;
+        LastTime = "0";
+        NextToken = null;
+    }
 }
 
 //GetSensoricDataResponse
