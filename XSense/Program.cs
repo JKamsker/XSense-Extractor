@@ -59,7 +59,7 @@ internal class Program
                 // Pagination: Loop till NextToken is null or empty
                 do
                 {
-                    var sensoricData = await xsenseApiClient.GetSensoricDataAsync(new GetSensoricDataRequest
+                    var sensoricData = await xsenseApiClient.GetSensoricHistoryPageAsync(new GetSensoricDataRequest
                     {
                         HouseId = details.HouseId,
                         StationId = station.StationId,

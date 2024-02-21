@@ -9,7 +9,7 @@ using XSense.Models.Init;
 
 namespace XSense.Models.Sensoric;
 
-public class GetSensoricDataRequest
+public record class GetSensoricDataRequest
 {
     /*
         houseId = "64C4BD7BB9DF11EE8FFBF7BED2BE3C43",
@@ -46,7 +46,7 @@ public class GetSensoricDataRequest
         StationId = station.StationId;
         DeviceId = device.DeviceId;
         LastTime = "0";
-        NextToken = null;
+        NextToken = "";
     }
 }
 

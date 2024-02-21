@@ -4,6 +4,7 @@ using Amazon.IotData.Model;
 using Amazon.Runtime;
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 
 using XSense.Clients;
@@ -163,13 +164,6 @@ public class XSenseApiClient
         return await _httpClient.GetHouseDetails(clientInfo, creds, houseId).ConfigureAwait(false);
     }
 
-    public async Task<GetSensoricDataResponseData> GetSensoricDataAsync(GetSensoricDataRequest request)
-    {
-        var creds = await GetCredentialsAsync().ConfigureAwait(false);
-        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
-        return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
-    }
-
     public async Task<LiveSensoricData> PollSensoricDataAsync(Station station)
     {
         await _iotClient.UpdateThingsShadow(station);
@@ -181,4 +175,65 @@ public class XSenseApiClient
 
         return shadowData;
     }
+
+    public async Task<GetSensoricDataResponseData> GetSensoricHistoryPageAsync(GetSensoricDataRequest request)
+    {
+        var creds = await GetCredentialsAsync().ConfigureAwait(false);
+        var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
+        return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
+    }
+
+    public IAsyncEnumerable<LiveMetricsDataPoint> EnumerateSensoricHistoryAsync(GetHousesDetailResponseData details, Station station, Device device, bool smartStopEnabled)
+    {
+        var request = new GetSensoricDataRequest(details, station, device);
+        return EnumerateSensoricHistoryAsync(request, smartStopEnabled);
+    }
+
+    public async IAsyncEnumerable<LiveMetricsDataPoint> EnumerateSensoricHistoryAsync(GetSensoricDataRequest request, bool smartStopEnabled)
+    {
+        var nextToken = "";
+        var lastTime = "0";
+
+        int smartStop = 0;
+
+        do
+        {
+            bool hadData = false;
+            var currentRequest = request with
+            {
+                LastTime = lastTime,
+                NextToken = nextToken
+            };
+
+            var sensoricData = await GetSensoricHistoryPageAsync(currentRequest);
+
+            foreach (var item in sensoricData.DataList)
+            {
+                // item.Key: 20240131 (yyyyMMdd)
+                var date = DateTime.ParseExact(item.Key, "yyyyMMdd", CultureInfo.InvariantCulture);
+                foreach (var value in item.Value)
+                {
+                    hadData = true;
+                    // value: 235900,22.3,48.8 (HHmmss,temperature,humidity)
+                    var parts = value.Split(',');
+                    var time = TimeSpan.ParseExact(parts[0], "hhmmss", CultureInfo.InvariantCulture);
+                    var temperature = double.Parse(parts[1], CultureInfo.InvariantCulture);
+                    var humidity = double.Parse(parts[2], CultureInfo.InvariantCulture);
+
+                    var dateTime = date.Add(time);
+                    yield return new LiveMetricsDataPoint(dateTime, temperature, humidity);
+                }
+            }
+
+            smartStop = hadData ? 0 : smartStop + 1;
+
+            nextToken = sensoricData.NextToken;
+            lastTime = sensoricData.LastTime;
+
+            //var lastTimeParsed = DateTime.ParseExact(lastTime, "yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+            //var nextTokenParsed = DateTime.ParseExact(nextToken[..14], "yyyyMMddHHmmss", CultureInfo.InvariantCulture);
+        } while (!string.IsNullOrWhiteSpace(nextToken) && ((smartStopEnabled && smartStop <= 3) || !smartStopEnabled));
+    }
 }
+
+public record LiveMetricsDataPoint(DateTime Time, double Temperature, double Humidity);
