@@ -2,7 +2,7 @@
 
 namespace XSense.Models.Init;
 
-public partial class GetHousesDetailResponse : XSenseResponse<GetHousesDetailResponseData>
+public partial class GetHousesDetailResponse : XSenseResponse<HouseDetail>
 {
     [JsonPropertyName("delData")]
     public object[] DelData { get; set; }
@@ -14,7 +14,7 @@ public partial class GetHousesDetailResponse : XSenseResponse<GetHousesDetailRes
     public long Utctimestamp { get; set; }
 }
 
-public partial class GetHousesDetailResponseData
+public partial class HouseDetail
 {
     [JsonPropertyName("houseId")]
     public string HouseId { get; set; }

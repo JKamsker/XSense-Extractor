@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
+using XSense.Models.Aggregates;
 using XSense.Models.Init;
 
 namespace XSense.Models.Sensoric;
@@ -40,7 +41,16 @@ public record class GetSensoricDataRequest
     {
     }
 
-    public GetSensoricDataRequest(GetHousesDetailResponseData details, Station station, Device device)
+    public GetSensoricDataRequest(HouseDetailAggregate details, Station station, Device device)
+    {
+        HouseId = details.HouseId;
+        StationId = station.StationId;
+        DeviceId = device.DeviceId;
+        LastTime = "0";
+        NextToken = "";
+    }
+
+    public GetSensoricDataRequest(HouseDetail details, Station station, Device device)
     {
         HouseId = details.HouseId;
         StationId = station.StationId;

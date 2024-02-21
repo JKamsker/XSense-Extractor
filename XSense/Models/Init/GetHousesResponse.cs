@@ -8,7 +8,7 @@ using System.Xml.Linq;
 
 namespace XSense.Models.Init;
 
-public class GetHousesResponse : XSenseResponse<GetHousesResponseData[]>
+public class GetHousesResponse : XSenseResponse<House[]>
 {
     [JsonPropertyName("delData")]
     public object[] DelData { get; set; }
@@ -20,7 +20,7 @@ public class GetHousesResponse : XSenseResponse<GetHousesResponseData[]>
     public long Utctimestamp { get; set; }
 }
 
-public class GetHousesResponseData
+public class House
 {
     [JsonPropertyName("houseId")]
     public string HouseId { get; set; }

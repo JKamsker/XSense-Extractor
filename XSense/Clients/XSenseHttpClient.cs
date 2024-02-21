@@ -230,7 +230,7 @@ public class XSenseHttpClient
         return parsed?.ReCode == 200;
     }
 
-    public async Task<GetHousesResponseData[]> GetHouses(ClientInfo clientInfo, Credentials creds)
+    public async Task<House[]> GetHouses(ClientInfo clientInfo, Credentials creds)
     {
         clientInfo = clientInfo
             ?? throw new ArgumentNullException(nameof(clientInfo));
@@ -244,10 +244,10 @@ public class XSenseHttpClient
         });
 
         var parsed = await response.Content.ReadFromJsonAsync<GetHousesResponse>();
-        return parsed?.ReData ?? Array.Empty<GetHousesResponseData>();
+        return parsed?.ReData ?? Array.Empty<House>();
     }
 
-    public async Task<GetHousesDetailResponseData> GetHouseDetails(ClientInfo clientInfo, Credentials creds, string houseId)
+    public async Task<HouseDetail> GetHouseDetails(ClientInfo clientInfo, Credentials creds, string houseId)
     {
         clientInfo = clientInfo
             ?? throw new ArgumentNullException(nameof(clientInfo));

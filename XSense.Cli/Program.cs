@@ -94,7 +94,7 @@ internal class Program
             // gets all stations
             //return new[] { "stations" };
 
-            return new[] { "history" };
+            return new[] { "history", "--output", "all.csv" };
         }
 
         return args;

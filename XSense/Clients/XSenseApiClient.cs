@@ -9,6 +9,7 @@ using System.Text.Json;
 
 using XSense.Clients;
 using XSense.Database;
+using XSense.Models.Aggregates;
 using XSense.Models.Aws;
 using XSense.Models.Init;
 using XSense.Models.Sensoric;
@@ -149,7 +150,7 @@ public class XSenseApiClient
         }).ConfigureAwait(false);
     }
 
-    public async Task<GetHousesResponseData[]> GetHousesAsync()
+    public async Task<House[]> GetHousesAsync()
     {
         var creds = await GetCredentialsAsync().ConfigureAwait(false);
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
@@ -157,11 +158,17 @@ public class XSenseApiClient
     }
 
     // GetHouseDetails
-    public async Task<GetHousesDetailResponseData> GetHouseDetailsAsync(string houseId)
+    public async Task<HouseDetail> GetHouseDetailsAsync(string houseId)
     {
         var creds = await GetCredentialsAsync().ConfigureAwait(false);
         var clientInfo = await GetClientInfoAsync().ConfigureAwait(false);
         return await _httpClient.GetHouseDetails(clientInfo, creds, houseId).ConfigureAwait(false);
+    }
+
+    public async Task<HouseDetailAggregate> GetHouseDetailsAsync(House house)
+    {
+        var details = await GetHouseDetailsAsync(house.HouseId);
+        return new HouseDetailAggregate(house, details);
     }
 
     public async Task<LiveSensoricData> PollSensoricDataAsync(Station station)
@@ -183,7 +190,7 @@ public class XSenseApiClient
         return await _httpClient.GetSensoricData(clientInfo, creds, request).ConfigureAwait(false);
     }
 
-    public IAsyncEnumerable<LiveMetricsDataPoint> EnumerateSensoricHistoryAsync(GetHousesDetailResponseData details, Station station, Device device, bool smartStopEnabled)
+    public IAsyncEnumerable<LiveMetricsDataPoint> EnumerateSensoricHistoryAsync(HouseDetailAggregate details, Station station, Device device, bool smartStopEnabled)
     {
         var request = new GetSensoricDataRequest(details, station, device);
         return EnumerateSensoricHistoryAsync(request, smartStopEnabled);
