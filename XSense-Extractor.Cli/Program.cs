@@ -20,7 +20,10 @@ internal class Program
         args = GetDebugParams(args);
 
         await Host.CreateDefaultBuilder(args)
-           .UseConsoleLifetime()
+           .UseConsoleLifetime(x =>
+           {
+               x.SuppressStatusMessages = true;
+           })
            .ConfigureServices((_, services) =>
             {
                 services.AddSingleton<IStorage>(InMemoryStorage.LoadFromDisk("storage.json", false));
@@ -84,7 +87,7 @@ internal class Program
         return args;
 #endif
 
-        if (Debugger.IsAttached)
+        if (!Debugger.IsAttached)
         {
             return args;
         }
@@ -93,15 +96,14 @@ internal class Program
         {
             //return new[] { "login", "--username", "abc", "--password", "123" };
             //return new[] { "login", "--username", "USERNAME", "--password", "123" };
-            // return new[] { "login", "--username", "USERNAME", "--password", "PASSWORD" };
 
             //MonitorLiveDataCommand
             //return new[] { "monitor" };
 
             // gets all stations
-            return new[] { "stations" };
+            //return new[] { "stations" };
 
-            return new[] { "history", "--output", "all.csv" };
+            //return new[] { "history", "--output", "all.csv" };
         }
 
         return args;

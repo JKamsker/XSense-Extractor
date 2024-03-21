@@ -5,7 +5,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<Version>0.0.2</Version>
   </PropertyGroup>
+
+	<PropertyGroup>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>xsense-extractor</ToolCommandName>
+		<PackageOutputPath>./nupkg</PackageOutputPath>
+		<PackageId>XSense-Extractor</PackageId>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<!--<PackageReadmeFile>README.md</PackageReadmeFile>-->
+	</PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="JKToolKit.Spectre.AutoCompletion" Version="0.0.4" />

@@ -133,22 +133,26 @@ public class InMemoryStorage : IStorage
 
     public static InMemoryStorage LoadFromDisk(string fileName, bool readOnly = true)
     {
+        InMemoryStorage result;
         if (!File.Exists(fileName))
         {
-            return new InMemoryStorage();
+            result = new InMemoryStorage();
         }
+        else
+        {
+            var json = File.ReadAllText(fileName);
 
-        var json = File.ReadAllText(fileName);
-
-        var model = JsonSerializer.Deserialize<List<CacheEntryModel>>(json);
-        var cache = new ConcurrentDictionary<string, CacheEntry>(model.Select(x => new KeyValuePair<string, CacheEntry>(x.Key, x.ToCacheEntry())));
-        var storage = new InMemoryStorage(cache);
+            var model = JsonSerializer.Deserialize<List<CacheEntryModel>>(json);
+            var cache = new ConcurrentDictionary<string, CacheEntry>(model.Select(x => new KeyValuePair<string, CacheEntry>(x.Key, x.ToCacheEntry())));
+            result = new InMemoryStorage(cache);
+        }
 
         if (!readOnly)
         {
-            storage.OnCacheUpdated = async s => await s.SaveToDiskAsync(fileName);
+            result.OnCacheUpdated = async s => await s.SaveToDiskAsync(fileName);
         }
-        return storage;
+
+        return result;
     }
 
     public void Remove(string key)
