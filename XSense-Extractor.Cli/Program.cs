@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Spectre.Console.Cli;
 using Spectre.Console.Extensions.Hosting;
 
+using System.Diagnostics;
+
 using XSenseExtractor.Database;
 
 namespace XSenseExtractor.Cli;
@@ -79,8 +81,13 @@ internal class Program
     private static string[] GetDebugParams(string[] args)
     {
 #if !DEBUG
-        return Array.Empty<string>();
+        return args;
 #endif
+
+        if (Debugger.IsAttached)
+        {
+            return args;
+        }
 
         if (args.Length == 0)
         {

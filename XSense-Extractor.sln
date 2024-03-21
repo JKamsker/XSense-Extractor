@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSense-Extractor.Lib", "XSense\XSense-Extractor.Lib.csproj", "{F5C852CC-4B97-450C-AF83-25BE26DBBFEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSense-Extractor.Lib", "XSense-Extractor.Lib\XSense-Extractor.Lib.csproj", "{F5C852CC-4B97-450C-AF83-25BE26DBBFEE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSense-Extractor.Cli", "XSense.Cli\XSense-Extractor.Cli.csproj", "{C2EAE364-6BA0-48A4-BD7E-57BDC4FEED24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "XSense-Extractor.Cli", "XSense-Extractor.Cli\XSense-Extractor.Cli.csproj", "{C2EAE364-6BA0-48A4-BD7E-57BDC4FEED24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
