@@ -92,7 +92,7 @@ internal class Program
             //return new[] { "monitor" };
 
             // gets all stations
-            //return new[] { "stations" };
+            return new[] { "stations" };
 
             return new[] { "history", "--output", "all.csv" };
         }
