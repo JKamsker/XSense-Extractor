@@ -1,9 +1,9 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
 
-using XSense.Database;
+using XSenseExtractor.Database;
 
-namespace XSense.Cli;
+namespace XSenseExtractor.Cli;
 
 internal class LoginCommand : AsyncCommand<LoginCommand.Settings>
 {

@@ -1,6 +1,6 @@
 ﻿using Amazon.Runtime;
 
-namespace XSense.Utils;
+namespace XSenseExtractor.Utils;
 
 public class HttpClientFactoryWithSslDisabled : HttpClientFactory
 {

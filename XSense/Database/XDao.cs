@@ -1,7 +1,7 @@
-﻿using XSense.Models.Init;
-using XSense.Models.Internal;
+﻿using XSenseExtractor.Models.Init;
+using XSenseExtractor.Models.Internal;
 
-namespace XSense.Database;
+namespace XSenseExtractor.Database;
 
 public class XDao
 {

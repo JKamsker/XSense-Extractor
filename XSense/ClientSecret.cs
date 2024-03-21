@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace XSense;
+namespace XSenseExtractor;
 
 public class ClientSecret
 {

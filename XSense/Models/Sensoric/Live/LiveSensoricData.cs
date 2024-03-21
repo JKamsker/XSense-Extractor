@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace XSense.Models.Sensoric.Live;
+namespace XSenseExtractor.Models.Sensoric.Live;
 
 /*
 

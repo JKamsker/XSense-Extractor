@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace XSense.Models.Init;
+namespace XSenseExtractor.Models.Init;
 
 public partial class GetHousesDetailResponse : XSenseResponse<HouseDetail>
 {

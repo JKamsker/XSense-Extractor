@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using XSense.Models.Init;
+using XSenseExtractor.Models.Init;
 
-namespace XSense.Models.Aggregates;
+namespace XSenseExtractor.Models.Aggregates;
 
 public class HouseDetailAggregate
 {

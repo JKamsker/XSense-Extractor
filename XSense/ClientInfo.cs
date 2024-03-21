@@ -1,4 +1,4 @@
-﻿namespace XSense;
+﻿namespace XSenseExtractor;
 
 public record ClientInfo
 (

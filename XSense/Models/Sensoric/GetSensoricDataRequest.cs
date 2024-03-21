@@ -5,10 +5,10 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-using XSense.Models.Aggregates;
-using XSense.Models.Init;
+using XSenseExtractor.Models.Aggregates;
+using XSenseExtractor.Models.Init;
 
-namespace XSense.Models.Sensoric;
+namespace XSenseExtractor.Models.Sensoric;
 
 public record class GetSensoricDataRequest
 {

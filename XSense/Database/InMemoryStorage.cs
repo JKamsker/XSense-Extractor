@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace XSense.Database;
+namespace XSenseExtractor.Database;
 
 public interface IStorage
 {

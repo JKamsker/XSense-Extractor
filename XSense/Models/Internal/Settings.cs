@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace XSense.Models.Internal;
+namespace XSenseExtractor.Models.Internal;
 
 internal class Settings
 {

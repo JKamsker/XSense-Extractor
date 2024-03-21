@@ -4,12 +4,12 @@ using Spectre.Console.Cli;
 using System.Globalization;
 using System.Text;
 
-using XSense.Models.Aggregates;
-using XSense.Models.Init;
+using XSenseExtractor.Models.Aggregates;
+using XSenseExtractor.Models.Init;
 
 using static System.Collections.Specialized.BitVector32;
 
-namespace XSense.Cli;
+namespace XSenseExtractor.Cli;
 
 internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
 {

@@ -1,9 +1,9 @@
-﻿global using JsonContent = XSense.Utils.JsonContent;
+﻿global using JsonContent = XSenseExtractor.Utils.JsonContent;
 
 using System.Text;
 using System.Text.Json;
 
-namespace XSense.Utils;
+namespace XSenseExtractor.Utils;
 
 public class JsonContent : StringContent
 {

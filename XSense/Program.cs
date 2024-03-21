@@ -4,13 +4,13 @@ using Amazon.IotData.Model;
 using System.Collections;
 using System.Text.Json;
 
-using XSense.Database;
-using XSense.Models.Aws;
-using XSense.Models.Init;
-using XSense.Models.Sensoric;
-using XSense.Models.Sensoric.Live;
+using XSenseExtractor.Database;
+using XSenseExtractor.Models.Aws;
+using XSenseExtractor.Models.Init;
+using XSenseExtractor.Models.Sensoric;
+using XSenseExtractor.Models.Sensoric.Live;
 
-namespace XSense;
+namespace XSenseExtractor;
 
 internal class Program
 {

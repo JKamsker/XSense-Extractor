@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace XSense.Models.Init;
+namespace XSenseExtractor.Models.Init;
 
 public class GetHousesResponse : XSenseResponse<House[]>
 {

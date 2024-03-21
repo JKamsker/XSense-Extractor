@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace XSense.Models.Init;
+namespace XSenseExtractor.Models.Init;
 
 public partial class AwsIotCredentialsResponse : XSenseResponse<AwsIotCredentials>
 {

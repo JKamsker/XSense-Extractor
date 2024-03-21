@@ -7,16 +7,16 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 
-using XSense.Clients;
-using XSense.Database;
-using XSense.Models.Aggregates;
-using XSense.Models.Aws;
-using XSense.Models.Init;
-using XSense.Models.Sensoric;
-using XSense.Models.Sensoric.Live;
-using XSense.Utils;
+using XSenseExtractor.Clients;
+using XSenseExtractor.Database;
+using XSenseExtractor.Models.Aggregates;
+using XSenseExtractor.Models.Aws;
+using XSenseExtractor.Models.Init;
+using XSenseExtractor.Models.Sensoric;
+using XSenseExtractor.Models.Sensoric.Live;
+using XSenseExtractor.Utils;
 
-namespace XSense;
+namespace XSenseExtractor;
 
 public class XSenseApiClient
 {

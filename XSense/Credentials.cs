@@ -3,7 +3,7 @@ using Amazon.Extensions.CognitoAuthentication;
 
 using System.Text.Json.Serialization;
 
-namespace XSense;
+namespace XSenseExtractor;
 
 //public record Credentials
 //(

@@ -10,14 +10,14 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-using XSense.Models.Aws;
+using XSenseExtractor.Models.Aws;
 
-using XSense.Models.Init;
+using XSenseExtractor.Models.Init;
 
-using XSense.Utils;
-using XSense.Database;
+using XSenseExtractor.Utils;
+using XSenseExtractor.Database;
 
-namespace XSense.Clients;
+namespace XSenseExtractor.Clients;
 
 internal class XSenseAwsIotClient
 {

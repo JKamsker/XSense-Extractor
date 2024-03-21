@@ -7,9 +7,9 @@ using Microsoft.Extensions.Hosting;
 using Spectre.Console.Cli;
 using Spectre.Console.Extensions.Hosting;
 
-using XSense.Database;
+using XSenseExtractor.Database;
 
-namespace XSense.Cli;
+namespace XSenseExtractor.Cli;
 
 internal class Program
 {

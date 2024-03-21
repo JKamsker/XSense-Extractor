@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\XSense\XSense.csproj" />
+    <ProjectReference Include="..\XSense\XSense-Extractor.Lib.csproj" />
   </ItemGroup>
 
 </Project>

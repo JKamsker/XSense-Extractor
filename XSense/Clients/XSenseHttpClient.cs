@@ -6,12 +6,12 @@ using Amazon.Runtime;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-using XSense.Models;
-using XSense.Models.Init;
-using XSense.Models.Sensoric;
-using XSense.Utils;
+using XSenseExtractor.Models;
+using XSenseExtractor.Models.Init;
+using XSenseExtractor.Models.Sensoric;
+using XSenseExtractor.Utils;
 
-namespace XSense;
+namespace XSenseExtractor;
 
 public class XSenseHttpClient
 {
