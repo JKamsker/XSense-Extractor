@@ -1,9 +1,9 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
-
+using XSenseExtractor;
 using XSenseExtractor.Models.Init;
 
-namespace XSenseExtractor.Cli;
+namespace Commands;
 
 internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Settings>
 {

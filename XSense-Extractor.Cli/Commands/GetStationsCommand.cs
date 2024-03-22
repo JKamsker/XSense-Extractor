@@ -1,7 +1,8 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Cli;
+using XSenseExtractor;
 
-namespace XSenseExtractor.Cli;
+namespace Commands;
 
 // Lists stations and houses
 internal class GetStationsCommand : AsyncCommand

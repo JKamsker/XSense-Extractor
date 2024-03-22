@@ -3,13 +3,13 @@ using Spectre.Console.Cli;
 
 using System.Globalization;
 using System.Text;
-
+using XSenseExtractor;
 using XSenseExtractor.Models.Aggregates;
 using XSenseExtractor.Models.Init;
 
 using static System.Collections.Specialized.BitVector32;
 
-namespace XSenseExtractor.Cli;
+namespace Commands;
 
 internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
 {
@@ -241,8 +241,8 @@ record LiveMetricsDataPointEx
     ) : this(house, station, device, dataPoint.Time, dataPoint.Temperature, dataPoint.Humidity
     )
     {
-        this.House = house;
-        this.Station = station;
-        this.Device = device;
+        House = house;
+        Station = station;
+        Device = device;
     }
 }
