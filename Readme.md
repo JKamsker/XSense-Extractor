@@ -4,7 +4,8 @@ Tool is for extracting data from XSense sensors (currently only for Temperature 
 
 # XSenseExtractor
 
-`XSenseExtractor` is a .NET Tool to extract data from XSense sensors. It provides a command-line interface to interact with the XSense system, allowing you to retrieve data from the sensors and display it in human and machine-readable formats.
+`XSenseExtractor` is a .NET Tool to extract data from XSense sensors. <br/>
+It provides a command-line interface to interact with XSense, allowing you to retrieve data from the sensors and display it in human and machine-readable formats.
 
 
 ## Installation and Usage
