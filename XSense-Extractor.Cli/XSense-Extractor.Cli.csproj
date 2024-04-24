@@ -10,7 +10,7 @@
 
 	<PropertyGroup>
 		<PackAsTool>true</PackAsTool>
-		<ToolCommandName>xsense-extractor</ToolCommandName>
+		<ToolCommandName>xsense</ToolCommandName>
 		<PackageOutputPath>./nupkg</PackageOutputPath>
 		<PackageId>XSense-Extractor</PackageId>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>

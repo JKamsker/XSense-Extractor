@@ -1,4 +1,6 @@
-﻿using JKToolKit.Spectre.AutoCompletion.Completion;
+﻿using Commands;
+
+using JKToolKit.Spectre.AutoCompletion.Completion;
 using JKToolKit.Spectre.AutoCompletion.Integrations;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -104,6 +106,7 @@ internal class Program
             //return new[] { "stations" };
 
             //return new[] { "history", "--output", "all.csv" };
+            return new[] { "history" };
         }
 
         return args;

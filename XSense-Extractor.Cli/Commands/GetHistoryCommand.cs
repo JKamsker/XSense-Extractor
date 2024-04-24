@@ -1,4 +1,6 @@
-﻿using Spectre.Console;
+﻿using Microsoft.Extensions.Hosting;
+
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 using System.Globalization;
@@ -13,9 +15,6 @@ namespace Commands;
 
 internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
 {
-    private readonly XSenseApiClient _apiClient;
-    private Settings _settings;
-
     public class Settings : CommandSettings
     {
         [CommandOption("--houseId <STATIONID>")]
@@ -41,9 +40,14 @@ internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
         public string? Output { get; set; }
     }
 
-    public GetHistoryCommand(XSenseApiClient apiClient)
+    private readonly XSenseApiClient _apiClient;
+    private readonly IHostApplicationLifetime _env;
+    private Settings _settings;
+
+    public GetHistoryCommand(XSenseApiClient apiClient, IHostApplicationLifetime env)
     {
         _apiClient = apiClient;
+        _env = env;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
@@ -71,9 +75,15 @@ internal class GetHistoryCommand : AsyncCommand<GetHistoryCommand.Settings>
 
     private async Task DisplayLineByLine(Settings settings)
     {
+        var token = _env.ApplicationStopping;
         await foreach (var (house, station, device, time, temperature, humidity) in EnumerateSensoricHistoryAsync(settings))
         {
             AnsiConsole.MarkupLine($"[yellow]{time:yyyy-MM-dd HH:mm:ss}[/] [green]{temperature}°C[/] [blue]{humidity}%[/]");
+
+            if(token.IsCancellationRequested)
+            {
+                break;
+            }
         }
     }
 
