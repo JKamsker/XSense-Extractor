@@ -41,12 +41,15 @@ public class XSenseApiClient
     public async Task<bool> LoginWithLastUserAsync()
     {
         var settings = await _dao.GetSettingsAsync();
-        if (string.IsNullOrWhiteSpace(settings.LastUser))
+        var username = settings.LastUser ?? Environment.GetEnvironmentVariable("XSENSE_USERNAME");
+        var password = Environment.GetEnvironmentVariable("XSENSE_PASSWORD");
+
+        if (string.IsNullOrWhiteSpace(username))
         {
             return false;
         }
 
-        return await LoginAsync(settings.LastUser, null);
+        return await LoginAsync(username, password);
     }
 
     public async Task<bool> LoginAsync(string userName, string? password)

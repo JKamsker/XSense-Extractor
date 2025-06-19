@@ -40,7 +40,14 @@ internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Sett
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        var useMqtt = !string.IsNullOrWhiteSpace(settings.MqttServer);
+        var mqttServer = settings.MqttServer ?? Environment.GetEnvironmentVariable("MQTT_SERVER");
+        var mqttPort = settings.MqttPort == 1883 && Environment.GetEnvironmentVariable("MQTT_PORT") != null
+            ? int.Parse(Environment.GetEnvironmentVariable("MQTT_PORT"))
+            : settings.MqttPort;
+        var mqttUser = settings.MqttUser ?? Environment.GetEnvironmentVariable("MQTT_USER");
+        var mqttPassword = settings.MqttPassword ?? Environment.GetEnvironmentVariable("MQTT_PASSWORD");
+
+        var useMqtt = !string.IsNullOrWhiteSpace(mqttServer);
         IMqttClient mqttClient = null;
 
         if (useMqtt)
@@ -48,8 +55,8 @@ internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Sett
             var mqttFactory = new MqttFactory();
             mqttClient = mqttFactory.CreateMqttClient();
             var mqttClientOptions = new MqttClientOptionsBuilder()
-                .WithTcpServer(settings.MqttServer, settings.MqttPort)
-                .WithCredentials(settings.MqttUser, settings.MqttPassword)
+                .WithTcpServer(mqttServer, mqttPort)
+                .WithCredentials(mqttUser, mqttPassword)
                 .Build();
             await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
             AnsiConsole.MarkupLine("[green]Connected to MQTT broker.[/]");
@@ -175,7 +182,7 @@ internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Sett
         // Temperature
         var tempConfigPayload = new
         {
-            name = $"{item.DeviceName} Temperature",
+            name = $"Temperature",
             state_topic = $"homeassistant/sensor/{deviceIdentifier}/temperature/state",
             unit_of_measurement = "°C",
             device_class = "temperature",
@@ -192,7 +199,7 @@ internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Sett
         // Humidity
         var humidityConfigPayload = new
         {
-            name = $"{item.DeviceName} Humidity",
+            name = $"Humidity",
             state_topic = $"homeassistant/sensor/{deviceIdentifier}/humidity/state",
             unit_of_measurement = "%",
             device_class = "humidity",
@@ -209,7 +216,7 @@ internal class MonitorLiveDataCommand : AsyncCommand<MonitorLiveDataCommand.Sett
         // Battery
         var batteryConfigPayload = new
         {
-            name = $"{item.DeviceName} Battery",
+            name = $"Battery",
             state_topic = $"homeassistant/sensor/{deviceIdentifier}/battery/state",
             device_class = "battery",
             unique_id = $"{deviceIdentifier}_battery",

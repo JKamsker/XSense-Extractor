@@ -19,7 +19,14 @@ internal class Program
 {
     private static async Task<int> Main(string[] args)
     {
-        args = GetDebugParams(args);
+        if (args.Length == 0)
+        {
+            args = new[] { "monitor" };
+        }
+        else
+        {
+            args = GetDebugParams(args);
+        }
 
         await Host.CreateDefaultBuilder(args)
            .UseConsoleLifetime(x =>
@@ -96,17 +103,7 @@ internal class Program
 
         if (args.Length == 0)
         {
-            //return new[] { "login", "--username", "abc", "--password", "123" };
-            //return new[] { "login", "--username", "USERNAME", "--password", "123" };
-
-            //MonitorLiveDataCommand
-            //return new[] { "monitor" };
-
-            // gets all stations
-            //return new[] { "stations" };
-
-            //return new[] { "history", "--output", "all.csv" };
-            return new[] { "history" };
+            return new[] { "monitor" };
         }
 
         return args;
