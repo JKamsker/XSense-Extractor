@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace XSenseExtractor.Models.Internal;
 
-internal class Settings
+public class Settings
 {
     public string LastUser { get; set; }
 }

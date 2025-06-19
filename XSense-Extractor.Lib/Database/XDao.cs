@@ -40,7 +40,7 @@ public class XDao
         return await _storage.GetOrAddAsync($"iotCreds_{userId}", factory);
     }
 
-    internal async ValueTask<Settings> GetSettingsAsync()
+    public async ValueTask<Settings> GetSettingsAsync()
     {
         return await _storage.GetOrAddAsync<Settings>("settings", async _ => new Settings());
     }

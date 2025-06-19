@@ -33,10 +33,12 @@ internal class LoginCommand : AsyncCommand<LoginCommand.Settings>
     }
 
     private readonly XSenseApiClient _apiClient;
+    private readonly XDao _dao;
 
-    public LoginCommand(XSenseApiClient apiClient)
+    public LoginCommand(XSenseApiClient apiClient, XDao dao)
     {
         _apiClient = apiClient;
+        _dao = dao;
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
@@ -47,6 +49,9 @@ internal class LoginCommand : AsyncCommand<LoginCommand.Settings>
 
         if (success)
         {
+            var settingsDao = await _dao.GetSettingsAsync();
+            settingsDao.LastUser = settings.Username;
+            await _dao.SaveChangesAsync();
             AnsiConsole.MarkupLine($"[green]Success![/]");
             return 0;
         }

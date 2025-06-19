@@ -84,13 +84,16 @@ public class LiveSensoricDataMapper
         {
             var device = station.Devices.FirstOrDefault(d => string.Equals(d.DeviceSn, dev.Key, StringComparison.OrdinalIgnoreCase));
 
-            var status = dev.Value.Status;
-            yield return new LiveSensoricDataDto(device, status.Temperature, status.Humidity, dev.Value.BatInfo);
+            if (device != null)
+            {
+                var status = dev.Value.Status;
+                yield return new LiveSensoricDataDto(device.DeviceId, device.DeviceName, status.Temperature, status.Humidity, dev.Value.BatInfo);
+            }
         }
     }
 }
 
-public record LiveSensoricDataDto(Device? Device, string Temperature, string Humidity, string BatInfo);
+public record LiveSensoricDataDto(string DeviceId, string DeviceName, string Temperature, string Humidity, string BatInfo);
 
 public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
 {
@@ -140,9 +143,9 @@ public class LiveSensoricDataCollection : IEnumerable<LiveSensoricDataDto>
         {
             //var paddedName = item.Device?.DeviceName.PadRight(20);
             var minLen = 20;
-            var paddedName = item.Device?.DeviceName.Length > minLen
-                ? item.Device?.DeviceName.Substring(0, minLen)
-                : item.Device?.DeviceName.PadRight(minLen);
+            var paddedName = item.DeviceName.Length > minLen
+                ? item.DeviceName.Substring(0, minLen)
+                : item.DeviceName.PadRight(minLen);
 
             Console.WriteLine(
                 $"Device: {paddedName} \t" +

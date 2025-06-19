@@ -25,6 +25,7 @@
     <PackageReference Include="Spectre.Console" Version="0.48.1-preview.0.28" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.28" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="MQTTnet" Version="4.3.6" />
   </ItemGroup>
 
   <ItemGroup>
